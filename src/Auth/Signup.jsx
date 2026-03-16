@@ -63,7 +63,7 @@ export function Signup() {
       setLoading(true);
       setFormError("");
 
-      const response = await axios.post(SIGNUP_URL, payload);
+      const response = await axios.put(SIGNUP_URL, payload);
 
       console.log("API Response:", response.data);
 
