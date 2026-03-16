@@ -9,16 +9,17 @@ import {
   Label,
   TextField,
 } from "@heroui/react";
-import logo from "../../public/mlmboo2.ico";
+import logo from "../../public/mlmboo2.ico"
 import { Router } from "react-router";
 import { InputOTP } from "@heroui/react";
 import { useNavigate } from "react-router";
 import { useGeneralData } from "../Context/GeneralContext";
 
-export function Login() {
-  const { SIGNIN_URL } = useGeneralData();
+export function VerifyOtp() {
 
-  let navigate = useNavigate();
+  const {VERIFY_OTP_URL} = useGeneralData()
+let navigate = useNavigate();
+
 
   const onSubmit = (e) => {
     e.preventDefault();
@@ -35,9 +36,9 @@ export function Login() {
 
   return (
     <div className="flex flex-col gap-10 justify-center items-center h-screen ">
-      <img src={logo} className="w-[120px] border border-none h-[120px] " />
+        {/* <img src={logo} className="w-[120px] border border-none h-[120px] "/> */}
       <Form className="flex w-[290px] flex-col gap-4" onSubmit={onSubmit}>
-        <TextField
+        {/* <TextField
           name="mobile"
           type="number"
           validate={(value) => {
@@ -47,17 +48,17 @@ export function Login() {
             return null;
           }}
         >
-          <Label className={`font-bold text-[#5865f2]`}>Mobile No.</Label>
+          <Label  className={`font-bold text-[#5865f2]`}>Mobile No.</Label>
           <Input
             className="size-12 border border-2 border-gray-200 w-[290px]"
             placeholder=""
           />
           <FieldError />
-        </TextField>
+        </TextField> */}
 
         <div className="flex justiify-start items-start w-full flex-col gap-2">
-          <Label className={`font-bold text-[#5865f2]`}>Enter Pin</Label>
-          <InputOTP name="pin" maxLength={12}>
+          <Label  className={`font-bold text-[#5865f2]`}>Enter Pin</Label>
+          <InputOTP name="otp"  maxLength={12}>
             <InputOTP.Group className="gap-8">
               <InputOTP.Slot
                 className="size-12 border border-2 border-gray-200"
@@ -81,40 +82,26 @@ export function Login() {
         </div>
 
         <div className="flex justify-center mt-2 item-center gap-2">
-          <Button className={`w-[290px] size-12`} type="submit">
-            {/* <Check /> */}
-            Login Now
+          <Button  onClick={() => {
+              navigate("/lastuppin");
+            }} className={`w-[270px] size-12`} type="submit">
+            <Check />
+            Verify Now
           </Button>
-          {/* <Button type="reset" variant="secondary">
-          Reset
-        </Button> */}
-        </div>
-        <text className="text-center font-bold text-gray-700">
-          Don`t have An Account?
-          <span
-            onClick={() => {
+          <Button  onClick={() => {
               navigate("/signup");
-            }}
-            className=" font-bold ml-1 text-[#5865f2] "
-          >
-            Register
-          </span>
-        </text>
-        <text className="text-center cursor-touchable text-[#5865f2] underline font-bold">
-          <span
-            onClick={() => {
-              navigate("/forgetpin");
-            }}
-          >
-            Forget Pin?
-          </span>
-        </text>
+            }} type="reset" className={`size-12`} variant="secondary">
+          Back
+        </Button>
+        </div>
+
       </Form>
     </div>
   );
 }
 
-// payload_of_login = {
+
+// payload_of_forgetpass = {
 //   mobileNo: `${loginData.Mobile}`,
-//   password: `${pin}`,
+
 // };

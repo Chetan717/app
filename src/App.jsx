@@ -1,19 +1,30 @@
-import { useState } from 'react'
-import './App.css'
-import Home from './Pages/Home';
+import Home from "./Pages/Home";
+import { Login } from "./Auth/Login";
+import { Signup } from "./Auth/Signup";
+import ProtectedRoute from "./Auth/ProtectedR";
+import { Routes, Route } from "react-router";
+import { VerifyOtp } from "./Auth/VerifyOtp";
+import { Forgetpin } from "./Auth/ForgetPin";
+import { LastUpPin } from "./Auth/LastUpPin";
 
 function App() {
-  const [count, setCount] = useState(0)
-
   return (
-    <>
-      <section>
-        <Home/>
-        
-      </section>
-
-    </>
-  )
+    <Routes>
+      <Route
+        path="/"
+        element={
+          <ProtectedRoute>
+            <Home />
+          </ProtectedRoute>
+        }
+      />
+      <Route path="/login" element={<Login />} />
+      <Route path="/signup" element={<Signup />} />
+      <Route path="/verifyotp" element={<VerifyOtp />} />
+      <Route path="/forgetpin" element={<Forgetpin />} />
+      <Route path="/lastuppin" element={<LastUpPin />} />
+    </Routes>
+  );
 }
 
-export default App
+export default App;
