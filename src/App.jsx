@@ -4,7 +4,6 @@ import { Signup } from "./Auth/Signup";
 import ProtectedRoute from "./Auth/ProtectedR";
 import { Routes, Route } from "react-router";
 import { Forgetpin } from "./Auth/ForgetPin";
-import { LastUpPin } from "./Auth/LastUpPin";
 
 function App() {
   return (
@@ -20,7 +19,7 @@ function App() {
       <Route path="/login" element={<Login />} />
       <Route path="/signup" element={<Signup />} />
       <Route path="/forgetpin" element={<Forgetpin />} />
-      <Route path="/lastuppin" element={<LastUpPin />} />
+      
     </Routes>
   );
 }
