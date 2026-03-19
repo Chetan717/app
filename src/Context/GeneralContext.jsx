@@ -1,7 +1,21 @@
-import { createContext, useContext } from "react";
+import { createContext, useContext,useState,useEffect } from "react";
 const DataContextGen = createContext();
 
 function GeneralContext({ children }) {
+
+ const [theme, setTheme] = useState(
+    () => localStorage.getItem("theme") || "light"
+  );
+  useEffect(() => {
+    const html = document.documentElement;
+    html.className = theme;
+    html.setAttribute("data-theme", theme);
+    localStorage.setItem("theme", theme);
+  }, [theme]);
+
+const toggleTheme = () =>
+    setTheme((prev) => (prev === "light" ? "dark" : "light"));
+
   const datademo = "234";
 
   const API_KEY = "ADS360KEY";
@@ -18,7 +32,7 @@ function GeneralContext({ children }) {
 
   return (
     <>
-      <DataContextGen.Provider value={{ datademo,SIGNUP_URL }}>
+      <DataContextGen.Provider value={{ theme, toggleTheme }}>
         {children}
       </DataContextGen.Provider>
     </>

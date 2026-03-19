@@ -13,7 +13,7 @@ import { InputOTP } from "@heroui/react";
 import { useNavigate } from "react-router";
 import { collection, getDocs, query, where } from "firebase/firestore";
 import { db } from "../../Firebase";
-
+import { toast } from "@heroui/react";
 export function Login() {
   const navigate = useNavigate();
 
@@ -48,7 +48,7 @@ export function Login() {
       // ── Find user by mobile ─────────────────────────────────
       const q = query(
         collection(db, "users"),
-        where("mobileNo", "==", data.mobile)
+        where("mobileNo", "==", data.mobile),
       );
       const snapshot = await getDocs(q);
 
@@ -82,10 +82,11 @@ export function Login() {
       };
 
       localStorage.setItem("user", JSON.stringify(userToStore));
+      toast.success("User Login Successfully!");
 
       // ── Navigate to home ────────────────────────────────────
       navigate("/");
-
+      s;
     } catch (error) {
       console.error("Login Error:", error);
       setFormError("Something went wrong. Try again.");
@@ -96,15 +97,12 @@ export function Login() {
 
   return (
     <div className="flex flex-col gap-10 justify-center items-center h-screen">
+      <div className="flex flex-wrap gap-2"></div>
       <img src={logo} className="w-[120px] h-[120px]" />
 
       <Form className="flex w-[290px] flex-col gap-4" onSubmit={onSubmit}>
-
         {/* Mobile */}
-        <TextField
-          name="mobile"
-          type="tel"
-        >
+        <TextField name="mobile" type="tel">
           <Label className="font-bold text-[#5865f2]">Mobile No.</Label>
           <Input
             className="size-12 border-2 border-gray-200 w-[290px]"
@@ -140,11 +138,7 @@ export function Login() {
         )}
 
         {/* Submit */}
-        <Button
-          className="w-[290px] size-12"
-          type="submit"
-          isLoading={loading}
-        >
+        <Button className="w-[290px] size-12" type="submit" isLoading={loading}>
           {loading ? "Logging in..." : "Login Now"}
         </Button>
 
@@ -166,7 +160,6 @@ export function Login() {
         >
           Forgot PIN?
         </p>
-
       </Form>
     </div>
   );
