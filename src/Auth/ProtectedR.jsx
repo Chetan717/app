@@ -3,7 +3,7 @@ import { useNavigate } from "react-router";
 
 export default function ProtectedRoute({ children }) {
   const navigate = useNavigate();
-  const token = localStorage.getItem("toke");
+  const token = localStorage.getItem("user")
 
   useEffect(() => {
     if (!token) {

@@ -3,7 +3,7 @@ import { Login } from '../Auth/Login'
 function Home() {
   return (
     <>
-    
+    <div>HI</div>
     </>
   )
 }
