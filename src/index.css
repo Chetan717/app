@@ -2,22 +2,6 @@
 @import "@heroui/styles"; 
 @import "@heroui/styles"; 
 
-
-
-/*
- * HeroUI Theme Customization
- * Add this to your global.css after importing @heroui/styles
- * Only includes base variables from variables.css
- * @see https://v3.heroui.com/docs/react/getting-started/theming
- */
-
-/*
- * HeroUI Theme Customization
- * Add this to your global.css after importing @heroui/styles
- * Only includes base variables from variables.css
- * @see https://v3.heroui.com/docs/react/getting-started/theming
- */
-
 :root,
 .light,
 [data-theme="light"],
@@ -34,7 +18,7 @@
   --field-background: oklch(100.00% 0.0008 264.39);
   --field-foreground: oklch(21.03% 0.0015 264.39);
   --field-placeholder: oklch(55.17% 0.0030 264.39);
-  --focus: oklch(28.24% 0.1043 264.39);
+  --focus: #0e245c;
   --foreground: oklch(21.03% 0.0015 264.39);
   --muted: oklch(55.17% 0.0030 264.39);
   --overlay: oklch(100.00% 0.0004 264.39);
@@ -68,7 +52,7 @@
 [data-theme="dark"] {
   color-scheme: dark;
   /* Theme Colors (Dark Mode) */
-  --accent: oklch(28.24% 0.1043 264.39);
+  --accent: rgb(14, 36, 92);
   --accent-foreground: oklch(99.11% 0 0);
   --background: oklch(12.00% 0.0015 264.39);
   --border: oklch(28.00% 0.0015 264.39);
@@ -79,7 +63,7 @@
   --field-background: oklch(21.03% 0.0030 264.39);
   --field-foreground: oklch(99.11% 0.0015 264.39);
   --field-placeholder: oklch(70.50% 0.0030 264.39);
-  --focus: oklch(28.24% 0.1043 264.39);
+  --focus: #0e245c;
   --foreground: oklch(99.11% 0.0015 264.39);
   --muted: oklch(70.50% 0.0030 264.39);
   --overlay: oklch(21.03% 0.0030 264.39);
