@@ -7,28 +7,13 @@ import {
   Sack,
 } from "@gravity-ui/icons";
 import { useNavigate } from "react-router";
-import logo from "../../public/mlmboo2.ico"
+import logo from "../../public/mlmboo2.ico";
 const NAV_ITEMS = [
-  { icon: Dice5, label: "Dashboard", id: "dashboard", link: "/" },
-  // {
-  //   icon: ChartAreaStacked,
-  //   label: "Analytics",
-  //   id: "analytics",
-  //   link: "/anlytics",
-  // },
-  {
-    icon: LogoMicrosoftOffice,
-    label: "Companies",
-    id: "companies",
-    link: "/companies",
-  },
-  // { icon: Person, label: "Users", id: "users", link: "/users" },
-  // { icon: Sack, label: "Payments", id: "payments", link: "/payments" },
+  { icon: Dice5, label: "Home", id: "Home", link: "/" },
 ];
 
 const BOTTOM_ITEMS = [
-  { icon: Hand, label: "Settings", id: "settings" },
-  { icon: Hand, label: "Logout", id: "logout" },
+
 ];
 
 export default function Sidebar({
@@ -78,7 +63,7 @@ export default function Sidebar({
         <div className="flex items-center gap-3 px-4 py-[18px] border-b border-gray-100 dark:border-gray-800/70">
           {/* Icon mark */}
           <div className="min-w-[36px] w-9 h-9 rounded-xl  flex items-center justify-center shadow-lg shadow-violet-500/30 flex-shrink-0">
-                 <img src={logo} />
+            <img src={logo} />
           </div>
 
           {/* Brand name */}
@@ -91,7 +76,7 @@ export default function Sidebar({
             ].join(" ")}
             style={{ fontFamily: "'Syne', sans-serif" }}
           >
-         <span className="text-violet-500">MLMBOOSTER</span>
+            <span className="text-violet-500 text-[13px]">VSTAR PVT LTD</span>
           </span>
 
           {/* Mobile close button */}
@@ -233,10 +218,10 @@ export default function Sidebar({
               ].join(" ")}
             >
               <p className="text-sm font-semibold text-gray-800 dark:text-gray-200 leading-tight whitespace-nowrap">
-                Admin User
+                User
               </p>
               <p className="text-[11px] text-gray-400 dark:text-gray-500 whitespace-nowrap">
-                admin@mlm.com
+              user@mlm.com
               </p>
             </div>
           </div>
