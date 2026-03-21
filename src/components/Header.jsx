@@ -53,7 +53,7 @@ export default function Header({
           )}
         </button>
         <button className="flex items-center gap-2 pl-2 pr-2.5 py-1 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors group">
-          <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-pink-400 to-rose-500 flex items-center justify-center text-white font-bold text-xs flex-shrink-0">
+          <div className="w-7 h-7 rounded-lg bg-[#0e245c] to-rose-500 flex items-center justify-center text-white font-bold text-xs flex-shrink-0">
             A
           </div>
         </button>
