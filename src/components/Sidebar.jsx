@@ -1,6 +1,7 @@
 import {
-  Dice5,
+  Dots9,
   Hand,
+  Gem,
   ChartAreaStacked,
   Person,
   LogoMicrosoftOffice,
@@ -9,11 +10,13 @@ import {
 import { useNavigate } from "react-router";
 import logo from "../../public/mlmboo2.ico";
 const NAV_ITEMS = [
-  { icon: Dice5, label: "Home", id: "Home", link: "/" },
+  { icon: Dots9, label: "Home", id: "Home", link: "/" },
+  { icon: Gem, label: "My Subscriptions", id: "Subscriptions", link: "/Subscription" },
 ];
 
 const BOTTOM_ITEMS = [
-
+//   { icon: Hand, label: "Settings", id: "settings" },
+//   { icon: Hand, label: "Logout", id: "logout" },
 ];
 
 export default function Sidebar({
@@ -208,7 +211,7 @@ export default function Sidebar({
 
           {/* User strip */}
           <div className="flex items-center gap-3 px-3 py-2 mt-1">
-            <div className="min-w-[36px] w-9 h-9 rounded-xl bg-gradient-to-br from-pink-400 to-rose-500 flex items-center justify-center text-white font-bold text-sm flex-shrink-0">
+            <div className="min-w-[36px] w-9 h-9 rounded-xl bg-[#0e245c] flex items-center justify-center text-white font-bold text-sm flex-shrink-0">
               A
             </div>
             <div
