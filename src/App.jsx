@@ -1,40 +1,70 @@
 import Home from "./Pages/Home";
-import { Login } from "./Auth/Login";
-import { Signup } from "./Auth/Signup";
-import ProtectedRoute from "./Auth/ProtectedR";
+import { Login }         from "./Auth/Login";
+import { Signup }        from "./Auth/Signup";
+import { Forgetpin }     from "./Auth/ForgetPin";
+import ProtectedRoute    from "./Auth/ProtectedR";
+import Layout            from "./Layout";
+import MainSubscription  from "./Pages/Subscription/MainSubscription";
+import MlmProfile        from "./Pages/Mymlmprofile/MlmProfile";
+import ProtectMlmProfile from "./Pages/SelectCompany/ProtectMlmProfile";
+import SelectComp        from "./Pages/SelectCompany/SelectComp";
 import { Routes, Route } from "react-router";
-import { Forgetpin } from "./Auth/ForgetPin";
-import Layout from "./Layout";
-import MainSubscription from "./Pages/Subscription/MainSubscription";
+
 function App() {
   return (
     <Routes>
 
-      {/* ── Protected routes (with Sidebar + Header) ── */}
+      {/* ── Public auth routes ── */}
+      <Route path="/login"     element={<Login />} />
+      <Route path="/signup"    element={<Signup />} />
+      <Route path="/forgetpin" element={<Forgetpin />} />
+
+      {/* ── Company selection page ──
+           Only needs login. No profile guard here —
+           this IS the page to fix the missing company. */}
+      <Route
+        path="/selectcomp"
+        element={
+          <ProtectedRoute>
+            <Layout>
+              <SelectComp />
+            </Layout>
+          </ProtectedRoute>
+        }
+      />
+
       <Route
         path="/"
         element={
           <ProtectedRoute>
-            <Layout>
-              <Home />
-            </Layout>
+            <ProtectMlmProfile>
+              <Layout><Home /></Layout>
+            </ProtectMlmProfile>
           </ProtectedRoute>
         }
       />
-        <Route
+
+      <Route
+        path="/mlmprofile"
+        element={
+          <ProtectedRoute>
+            <ProtectMlmProfile>
+              <Layout><MlmProfile /></Layout>
+            </ProtectMlmProfile>
+          </ProtectedRoute>
+        }
+      />
+
+      <Route
         path="/subscription"
         element={
           <ProtectedRoute>
-            <Layout>
-             <MainSubscription/>
-            </Layout>
+            <ProtectMlmProfile>
+              <Layout><MainSubscription /></Layout>
+            </ProtectMlmProfile>
           </ProtectedRoute>
         }
       />
-      
-      <Route path="/login"     element={<Login />}     />
-      <Route path="/signup"    element={<Signup />}    />
-      <Route path="/forgetpin" element={<Forgetpin />} />
 
     </Routes>
   );

@@ -1,6 +1,7 @@
 import {
   Dots9,
   Hand,
+  PersonWorker,
   Gem,
   ChartAreaStacked,
   Person,
@@ -9,14 +10,26 @@ import {
 } from "@gravity-ui/icons";
 import { useNavigate } from "react-router";
 import logo from "../../public/mlmboo2.ico";
+import { useGeneralData } from "../Context/GeneralContext";
 const NAV_ITEMS = [
   { icon: Dots9, label: "Home", id: "Home", link: "/" },
-  { icon: Gem, label: "My Subscriptions", id: "Subscriptions", link: "/Subscription" },
+  {
+    icon: Gem,
+    label: "My Subscriptions",
+    id: "Subscriptions",
+    link: "/Subscription",
+  },
+  {
+    icon: Person,
+    label: "My MLM Profile",
+    id: "MyMLMProfile",
+    link: "/mlmprofile",
+  },
 ];
 
 const BOTTOM_ITEMS = [
-//   { icon: Hand, label: "Settings", id: "settings" },
-//   { icon: Hand, label: "Logout", id: "logout" },
+  //   { icon: Hand, label: "Settings", id: "settings" },
+  //   { icon: Hand, label: "Logout", id: "logout" },
 ];
 
 export default function Sidebar({
@@ -28,6 +41,8 @@ export default function Sidebar({
   setActive,
 }) {
   const navigate = useNavigate();
+
+  const { theme, theame_color } = useGeneralData();
 
   const handleNav = (id) => {
     setActive(id);
@@ -63,9 +78,11 @@ export default function Sidebar({
         ].join(" ")}
       >
         {/* ── Logo row ── */}
-        <div className="flex items-center gap-3 px-4 py-[18px] border-b border-gray-100 dark:border-gray-800/70">
+        <div className={`flex items-center gap-3 px-4 py-[18px]  dark:border-gray-800/70`}>
           {/* Icon mark */}
-          <div className="min-w-[36px] w-9 h-9 rounded-xl  flex items-center justify-center shadow-lg shadow-violet-500/30 flex-shrink-0">
+          <div
+            className={`min-w-[36px] w-10 h-10 rounded-xl  flex items-center justify-center shadow-lg shadow-[${theame_color}] flex-shrink-0`}
+          >
             <img src={logo} />
           </div>
 
@@ -79,7 +96,9 @@ export default function Sidebar({
             ].join(" ")}
             style={{ fontFamily: "'Syne', sans-serif" }}
           >
-            <span className="text-violet-500 text-[13px]">VSTAR PVT LTD</span>
+            <span className={`text-[${theame_color}] text-[15px]`}>
+              VSTAR PVT LTD
+            </span>
           </span>
 
           {/* Mobile close button */}
@@ -113,22 +132,17 @@ export default function Sidebar({
                 className={[
                   "w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all duration-200 group relative",
                   isActive
-                    ? "bg-violet-50 dark:bg-violet-500/10 text-violet-600 dark:text-violet-400"
+                    ? `bg-[${theame_color}] dark:bg-[${theame_color}] text-white dark:text-white`
                     : "text-gray-500 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800/60 hover:text-gray-800 dark:hover:text-gray-200",
                 ].join(" ")}
               >
                 {/* Active left bar */}
-                {isActive && (
-                  <span className="absolute left-0 top-1/2 -translate-y-1/2 w-[3px] h-6 bg-violet-500 rounded-r-full" />
-                )}
-
+               
                 {/* Icon */}
                 <span
                   className={[
                     "min-w-[20px] flex-shrink-0 transition-colors",
-                    isActive
-                      ? "text-violet-500"
-                      : "group-hover:text-violet-400",
+                    isActive ? "text-white" : "group-hover:text-violet-400",
                   ].join(" ")}
                 >
                   <Icon className="w-5 h-5" />
@@ -170,7 +184,7 @@ export default function Sidebar({
         </nav>
 
         {/* ── Bottom actions ── */}
-        <div className="border-t border-gray-100 dark:border-gray-800/70 px-2 py-3 space-y-0.5">
+        <div className=" dark:border-gray-800/70 px-2 py-3 space-y-0.5">
           {BOTTOM_ITEMS.map(({ icon: Icon, label, id }) => {
             const isActive = active === id;
             const isLogout = id === "logout";
@@ -224,7 +238,7 @@ export default function Sidebar({
                 User
               </p>
               <p className="text-[11px] text-gray-400 dark:text-gray-500 whitespace-nowrap">
-              user@mlm.com
+                user@mlm.com
               </p>
             </div>
           </div>

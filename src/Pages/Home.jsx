@@ -2,6 +2,7 @@
 import React from "react";
 import { Moon, Sun } from "@gravity-ui/icons";
 import { useGeneralData } from "../Context/GeneralContext";
+import Homepage from "./Homepage/Homepage";
 
 function Home() {
   const { theme, toggleTheme } = useGeneralData();
@@ -9,7 +10,7 @@ function Home() {
 
   return (
     <div className="flex justify-center items-center h-screen">
-    Home
+   <Homepage/>
     </div>
   );
 }

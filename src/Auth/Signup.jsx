@@ -23,7 +23,7 @@ import {
   doc,
   updateDoc,
 } from "firebase/firestore";
-import { db } from "../../Firebase";
+import { db } from "../../firebase";
 
 export function Signup() {
   const navigate = useNavigate();
