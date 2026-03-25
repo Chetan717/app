@@ -17,7 +17,7 @@ const toggleTheme = () =>
     setTheme((prev) => (prev === "light" ? "dark" : "light"));
 
   const datademo = "234";
-
+ const theame_color = "#0e245c"
   const API_KEY = "ADS360KEY";
   const HOST = "cvmhznb2u7";
 
@@ -32,7 +32,7 @@ const toggleTheme = () =>
 
   return (
     <>
-      <DataContextGen.Provider value={{ theme, toggleTheme }}>
+      <DataContextGen.Provider value={{ theme, toggleTheme,theame_color }}>
         {children}
       </DataContextGen.Provider>
     </>

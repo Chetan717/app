@@ -12,7 +12,7 @@ import logo from "../../public/mlmboo2.ico";
 import { InputOTP } from "@heroui/react";
 import { useNavigate } from "react-router";
 import { collection, getDocs, query, where } from "firebase/firestore";
-import { db } from "../../Firebase";
+import { db } from "../../firebase";
 import { toast } from "@heroui/react";
 export function Login() {
   const navigate = useNavigate();
