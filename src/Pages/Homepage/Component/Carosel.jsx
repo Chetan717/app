@@ -23,7 +23,7 @@ export default function Carosel() {
   console.log(slides);
 
   return (
-    <div className="flex justify-center items-center lg:h-[300px] h-[200px] w-full p-2">
+    <div className="flex mt-1 justify-center items-center p-1 lg:h-[300px] h-[200px] w-full ">
       <Swiper
         pagination={{ dynamicBullets: true }}
         modules={[Pagination]}
@@ -34,7 +34,7 @@ export default function Carosel() {
             <img
               src={item.image}
               alt="trending"
-              className="w-full h-full object-contain "
+              className="w-full h-full object-cover rounded-xl"
               loading="lazy"
             />
           </SwiperSlide>

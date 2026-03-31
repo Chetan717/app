@@ -20,7 +20,7 @@ export default function Header({
   };
 
   return (
-    <header className="sticky top-0 z-30 h-16 flex items-center px-4 gap-3 bg-white/80 dark:bg-[#0f1117]/80 backdrop-blur-md border-b border-gray-100 dark:border-gray-800/70">
+    <header className="sticky top-0 z-30  h-16 flex items-center px-4 gap-3 bg-white/80 dark:bg-[#0f1117]/80 backdrop-blur-md border-b border-gray-100 dark:border-gray-800/70">
       {/* Sidebar toggle */}
       <button
         onClick={handleMenuClick}

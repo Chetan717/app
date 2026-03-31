@@ -9,9 +9,9 @@ function Home() {
   const isDark = theme === "dark";
 
   return (
-    <div className="flex justify-center items-center h-screen">
+    <div className="flex justify-center items-center h-screen w-full">
    <Homepage/>
-    </div>
+   </div>
   );
 }
 
