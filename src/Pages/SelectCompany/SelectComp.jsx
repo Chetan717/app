@@ -1,7 +1,7 @@
 import { Button, InputGroup, Chip, TextField } from "@heroui/react";
 import React, { useEffect, useState, useMemo, useCallback } from "react";
 import { useGeneralData } from "../../Context/GeneralContext";
-import { db } from "../../../Firebase";
+import { db } from "../../../firebase";
 import { collection, getDocs } from "firebase/firestore";
 import { useNavigate } from "react-router";
 

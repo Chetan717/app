@@ -9,6 +9,7 @@ import MlmProfile        from "./Pages/Mymlmprofile/MlmProfile";
 import ProtectMlmProfile from "./Pages/SelectCompany/ProtectMlmProfile";
 import SelectComp        from "./Pages/SelectCompany/SelectComp";
 import { Routes, Route } from "react-router";
+import AllTemplates from "./Pages/Homepage/Component/AllTemplates";
 
 function App() {
   return (
@@ -39,6 +40,16 @@ function App() {
           <ProtectedRoute>
             <ProtectMlmProfile>
               <Layout><Home /></Layout>
+            </ProtectMlmProfile>
+          </ProtectedRoute>
+        }
+      />
+       <Route
+        path="/alltemp"
+        element={
+          <ProtectedRoute>
+            <ProtectMlmProfile>
+              <Layout><AllTemplates/></Layout>
             </ProtectMlmProfile>
           </ProtectedRoute>
         }

@@ -1,11 +1,11 @@
-import { createContext, useContext,useState,useEffect } from "react";
+import { createContext, useContext, useState, useEffect } from "react";
 const DataContextGen = createContext();
 
 function GeneralContext({ children }) {
-
- const [theme, setTheme] = useState(
-    () => localStorage.getItem("theme") || "light"
+  const [theme, setTheme] = useState(
+    () => localStorage.getItem("theme") || "light",
   );
+  const [selType, setSelType] = useState({});
   useEffect(() => {
     const html = document.documentElement;
     html.className = theme;
@@ -13,26 +13,16 @@ function GeneralContext({ children }) {
     localStorage.setItem("theme", theme);
   }, [theme]);
 
-const toggleTheme = () =>
+  const toggleTheme = () =>
     setTheme((prev) => (prev === "light" ? "dark" : "light"));
 
-  const datademo = "234";
- const theame_color = "#0e245c"
-  const API_KEY = "ADS360KEY";
-  const HOST = "cvmhznb2u7";
-
-  const SIGNIN_URL = `https://${String(HOST)}.execute-api.ap-south-1.amazonaws.com/signinUser/?API_KEY=${API_KEY}`;
-  const SIGNUP_URL = `https://${String(HOST)}.execute-api.ap-south-1.amazonaws.com/createUser/?API_KEY=${API_KEY}`;
-  const VERIFY_OTP_URL = `https://${HOST}.execute-api.ap-south-1.amazonaws.com/verifyOtp/?API_KEY=${API_KEY}`;
-  const FORGET_PASS_URL =  `https://${HOST}.execute-api.ap-south-1.amazonaws.com/forgetPass/?API_KEY=${API_KEY}`;
-
-  const CreateProfileApi = `https://${HOST}.execute-api.ap-south-1.amazonaws.com/CreateMlmUser/?API_KEY=${API_KEY}`;
-  const UpdateProfileApi = `https://${HOST}.execute-api.ap-south-1.amazonaws.com/mlmUser`;
-  const GetMlMTempByID = `https://${HOST}.execute-api.ap-south-1.amazonaws.com/tempByCompany`;
+  const theame_color = "#0e245c";
 
   return (
     <>
-      <DataContextGen.Provider value={{ theme, toggleTheme,theame_color }}>
+      <DataContextGen.Provider
+        value={{ theme, toggleTheme, theame_color, setSelType, selType }}
+      >
         {children}
       </DataContextGen.Provider>
     </>

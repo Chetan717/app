@@ -3,22 +3,22 @@ import Sidebar from "./components/Sidebar";
 import Header from "./components/Header";
 
 const PAGE_LABELS = {
-  dashboard:     "Dashboard",
-  analytics:     "Analytics",
-  users:         "Users",
-  orders:        "Orders",
-  payments:      "Payments",
-  projects:      "Projects",
+  dashboard: "Dashboard",
+  analytics: "Analytics",
+  users: "Users",
+  orders: "Orders",
+  payments: "Payments",
+  projects: "Projects",
   notifications: "Notifications",
-  settings:      "Settings",
-  logout:        "Logout",
+  settings: "Settings",
+  logout: "Logout",
 };
 
 export default function Layout({ children }) {
-  const [collapsed,   setCollapsed]   = useState(false);
-  const [mobileOpen,  setMobileOpen]  = useState(false);
-  const [darkMode,    setDarkMode]    = useState(false);
-  const [active,      setActive]      = useState("dashboard");
+  const [collapsed, setCollapsed] = useState(false);
+  const [mobileOpen, setMobileOpen] = useState(false);
+  const [darkMode, setDarkMode] = useState(false);
+  const [active, setActive] = useState("dashboard");
 
   // Toggle dark class on <html>
   useEffect(() => {
@@ -45,7 +45,7 @@ export default function Layout({ children }) {
         setActive={setActive}
       />
 
-      <div className="flex flex-col flex-1 min-w-0 overflow-hidden">
+      <div className="flex flex-col  overflow-y-auto flex-1 min-w-0 overflow-hidden">
         <Header
           collapsed={collapsed}
           setCollapsed={setCollapsed}
@@ -54,7 +54,7 @@ export default function Layout({ children }) {
           setDarkMode={setDarkMode}
           activeLabel={PAGE_LABELS[active] ?? "Dashboard"}
         />
-        <div className="flex-1 overflow-y-auto">
+        <div  className="flex-1 h-full overflow-y-auto h-full  layout-scroll-container">
           {children}
         </div>
       </div>

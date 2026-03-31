@@ -1,95 +1,100 @@
-import { useState, useRef } from "react";
-// Slider Wrapper for Festival Data only get Data OF Genaral template Of From Db 
-const generalTempData = [];
+import React, { useState } from "react";
+import { useGeneralData } from "../../../Context/GeneralContext";
+import { useNavigate } from "react-router";
 
-export default function ListOfGenaraltemp() {
-  const [active, setActive] = useState(null);
-  const sliderRef = useRef(null);
+function ListOfGenaraltemp({ templates, loading }) {
+  const [selectedTemp, setSelectedTemp] = useState(null);
+  const { selType, setSelType } = useGeneralData();
+  const navigate = useNavigate();
 
-  const scroll = (dir) => {
-    if (sliderRef.current) {
-      sliderRef.current.scrollBy({ left: dir * 220, behavior: "smooth" });
-    }
+  const handleImagePress = (item) => {
+    setSelectedTemp(item);
+    const selttype = {
+      id: item.id,
+      type: item.type,
+      serial: item.serial,
+      ShowCaseForm: item.ShowCaseForm,
+    };
+    setSelType(selttype);
+    navigate("/alltemp");
   };
 
+  // ✅ Helper to avoid repeating the condition everywhere
+  const isGridType = (type) =>
+    type === "Welcome_Closing" ||
+    type === "Anniversary_Birthday" ||
+    type === "ThankYou_Birthday_Anniversary";
+
   return (
-    <div className="h-[110px] w-full flex flex-col items-center justify-center">
-      <style>{`
-       
-        .card-item { transition: transform 0.25s cubic-bezier(.34,1.56,.64,1), box-shadow 0.25s ease; }
-        .card-item:hover { transform: scale(1.04); box-shadow: 0 24px 48px rgba(0,0,0,0.5); }
-        .slider-track::-webkit-scrollbar { display: none; }
-        .slider-track { scrollbar-width: none; }
-        .btn-arrow { transition: background 0.2s, transform 0.15s; }
-        .btn-arrow:hover { transform: scale(1.15); }
-        .tag-pill { font-size: 10px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; }
-      `}</style>
+    <div className="flex justify-center mb-3 p-2 lg:items-center items-center flex-col lg:w-[400px] w-full">
+      {templates?.map((group) => (
+        <div key={group.type} className="w-full mb-2">
+          {/* ✅ Hide heading for grid types */}
+          {!isGridType(group.type) && (
+            <h2 className="text-sm font-bold mb-1">
+              {group.type.replaceAll("_", " ")}
+            </h2>
+          )}
 
-      {/* Slider Wrapper */}
-      <div className="relative flex items-center w-full px-1">
-        <div
-          ref={sliderRef}
-          className="slider-track flex gap-4 overflow-x-auto px-8 py-6"
-          style={{ scrollSnapType: "x mandatory" }}
-        >
-          {generalTempData.map((card) => (
-            <div
-              key={card.id}
-              className="card-item flex-shrink-0 lg:h-[150px] h-[100px] lg:w-[150px] w-[100px] rounded-2xl overflow-hidden cursor-pointer relative"
-              style={{
-                scrollSnapAlign: "start",
-                // border:
-                //   active === card.id
-                //     ? `2px solid ${card.accent}`
-                //     : "2px solid transparent",
-              }}
-              onClick={() => setActive(active === card.id ? null : card.id)}
-            >
-              {/* Gradient Background */}
-              {/* <div
-                className={`absolute inset-0 bg-gradient-to-br ${card.bg} opacity-90`}
-              /> */}
-
-              {/* Noise texture overlay */}
-              <div
-                className="absolute inset-0 opacity-20"
-                style={{
-                  backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E")`,
-                  backgroundSize: "128px",
-                }}
-              />
-
-              {/* Content */}
-              <div className="relative z-10 h-full flex flex-col justify-between p-4">
-                {/* Top: Tag */}
-                <div className="flex justify-between items-start"></div>
-
-                <div>
-                  <p
-                    className="text-[7px] lg:text-[10px] font-semibold "
-                    style={{ color: "rgba(255, 255, 255, 0.65)" }}
-                  >
-                    {card.subtitle}
-                  </p>
+          {/* ✅ Fixed: each comparison now uses group.type === "..." */}
+          {isGridType(group.type) ? (
+            <div className="flex justify-center w-full items-center flex-row gap-0 bg-gray-200 rounded-xl">
+              {group?.templates?.map((item) => (
+                <div
+                  key={item.id}
+                  className="rounded-xl flex justify-center items-center h-[80px] w-1/2 p-1"
+                  onClick={() => handleImagePress(item)}
+                >
+                  <img
+                    src={item.image}
+                    className={`rounded-lg h-[70px] w-full object-cover cursor-pointer transition-all duration-150
+                      ${
+                        selectedTemp?.id === item?.id
+                          ? "border-2"
+                          : "border-2 border-transparent"
+                      }`}
+                  />
                 </div>
-              </div>
+              ))}
             </div>
-          ))}
+          ) : (
+            <div className="flex justify-start items-center flex-row gap-3 bg-gray-200 rounded-xl p-2 hide-scrollbar overflow-x-auto">
+              {group?.templates?.map((item) => (
+                <div
+                  key={item.id}
+                  className="rounded-xl flex-shrink-0"
+                  onClick={() => handleImagePress(item)}
+                >
+                  <img
+                    src={item.image}
+                    className={`rounded-lg bg-gray-200 w-[85px] h-[85px] object-cover cursor-pointer transition-all duration-150
+                      ${
+                        selectedTemp?.id === item?.id
+                          ? "border-2"
+                          : "border-2 border-transparent"
+                      }`}
+                  />
+                </div>
+              ))}
+            </div>
+          )}
         </div>
+      ))}
 
-        {/* Right Arrow */}
-        <button
-          onClick={() => scroll(1)}
-          className="btn-arrow absolute right-0 z-10 lg:w-9 lg:h-9 w-6 h-6 rounded-full flex items-center justify-center text-white"
-          style={{
-            background: "rgba(255,255,255,0.1)",
-            border: "1px solid rgba(255,255,255,0.15)",
-            backdropFilter: "blur(8px)",
-          }}
-        >
-          ›
-        </button>
+      <div className="w-[90%] flex justify-center items-center mx-auto mt-2">
+        <p className="text-center font-medium text-[11px] text-gray-500">
+          We are working on more images. We will share with you soon. Thank you
+          for your patience ☺️!
+        </p>
       </div>
+
+      {loading && (
+        <div className="text-center py-6 font-semibold">
+          Loading templates...
+        </div>
+      )}
     </div>
   );
 }
+
+export default ListOfGenaraltemp;

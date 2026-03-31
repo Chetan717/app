@@ -13,9 +13,9 @@ export default function Listmlmtemp() {
   };
 
   return (
-    <div className="h-[110px] w-full flex flex-col items-center justify-center">
+    <div className="h-[100px] w-full flex flex-col items-center px-2 justify-center">
       <style>{`
-       
+       1
         .card-item { transition: transform 0.25s cubic-bezier(.34,1.56,.64,1), box-shadow 0.25s ease; }
         .card-item:hover { transform: scale(1.04); box-shadow: 0 24px 48px rgba(0,0,0,0.5); }
         .slider-track::-webkit-scrollbar { display: none; }
