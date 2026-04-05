@@ -1,10 +1,11 @@
 import React from 'react'
+import MLMProfileModal from '../Form/Mlmprofilemodal'
 
 function MlmProfile() {
   return (
-    <div>
-      mlm
-    </div>
+    <>
+      <MLMProfileModal />
+    </>
   )
 }
 

@@ -59,7 +59,6 @@ function Homepage() {
     <div className="flex flex-col  h-full sjustify-center  items-center w-full gap-3">
       <Carosel />
       <Festival />
-      <MLMProfileModal/>
       <ListOfGenaraltemp templates={templates} loading={loading} />
     </div>
   );

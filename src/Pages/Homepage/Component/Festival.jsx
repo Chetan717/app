@@ -13,10 +13,19 @@ export default function Festival() {
     loadFestival(selectedDate);
   }, [selectedDate]);
 
-  const loadFestival = async (date) => {
-    const data = await Festival_template(date);
-    setFestivalTempData(data);
-  };
+ // In Festival.jsx
+const { cachedFestivalData, setCachedFestivalData } = useGeneralData();
+
+const loadFestival = async (date) => {
+  // ✅ Return early if already cached
+  if (cachedFestivalData[date]) {
+    setFestivalTempData(cachedFestivalData[date]);
+    return;
+  }
+  const data = await Festival_template(date);
+  setCachedFestivalData(prev => ({ ...prev, [date]: data }));
+  setFestivalTempData(data);
+};
 
   const scroll = (dir) => {
     if (sliderRef.current) {

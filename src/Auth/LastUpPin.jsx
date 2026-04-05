@@ -25,7 +25,6 @@ export function LastUpPin() {
       data[key] = value.toString();
     });
 
-    console.log(data);
   };
 
   return (

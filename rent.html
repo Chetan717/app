@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Insta Post Creator</title>
+
+  <!-- ✅ Fix favicon 404 -->
+  <link rel="icon" href="data:,">
+
+  <style>
+    body {
+      font-family: Arial;
+      text-align: center;
+      padding: 20px;
+      background: #111;
+      color: white;
+    }
+
+    .container {
+      max-width: 400px;
+      margin: auto;
+      background: #222;
+      padding: 20px;
+      border-radius: 12px;
+    }
+
+    canvas {
+      width: 100%;
+      border-radius: 10px;
+      margin-top: 10px;
+      background: black;
+    }
+
+    button {
+      margin-top: 10px;
+      padding: 10px;
+      background: #ff0066;
+      border: none;
+      color: white;
+      cursor: pointer;
+      border-radius: 5px;
+      width: 100%;
+    }
+
+    input {
+      margin-top: 10px;
+    }
+
+    video {
+      border-radius: 10px;
+    }
+  </style>
+</head>
+<body>
+
+<div class="container">
+  <h2>📸 Insta Post Creator</h2>
+
+  <input type="file" id="imageInput" accept="image/*"><br>
+  <input type="file" id="audioInput" accept="audio/*"><br>
+
+  <canvas id="canvas" width="320" height="320"></canvas>
+
+  <button onclick="generateVideo()">🎬 Generate Video</button>
+  <button onclick="downloadVideo()">⬇ Download</button>
+
+  <video id="preview" controls style="width:100%; margin-top:10px;"></video>
+</div>
+
+<script>
+const canvas = document.getElementById("canvas");
+const ctx = canvas.getContext("2d");
+
+let image = new Image();
+let audioBlob;
+let mediaRecorder;
+let recordedChunks = [];
+
+// 🔥 DRAW IMAGE WITH COVER FIT (no stretch)
+function drawImageCover(img) {
+  const canvasRatio = canvas.width / canvas.height;
+  const imgRatio = img.width / img.height;
+
+  let drawWidth, drawHeight, offsetX, offsetY;
+
+  if (imgRatio > canvasRatio) {
+    drawHeight = canvas.height;
+    drawWidth = img.width * (canvas.height / img.height);
+    offsetX = -(drawWidth - canvas.width) / 2;
+    offsetY = 0;
+  } else {
+    drawWidth = canvas.width;
+    drawHeight = img.height * (canvas.width / img.width);
+    offsetX = 0;
+    offsetY = -(drawHeight - canvas.height) / 2;
+  }
+
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  ctx.drawImage(img, offsetX, offsetY, drawWidth, drawHeight);
+}
+
+// 📸 IMAGE LOAD
+document.getElementById("imageInput").onchange = (e) => {
+  const file = e.target.files[0];
+  if (!file) return;
+
+  const url = URL.createObjectURL(file);
+  image.src = url;
+
+  image.onload = () => {
+    drawImageCover(image);
+  };
+};
+
+// 🎵 AUDIO LOAD
+document.getElementById("audioInput").onchange = (e) => {
+  audioBlob = e.target.files[0];
+};
+
+// 🎬 GENERATE VIDEO
+async function generateVideo() {
+  if (!audioBlob || !image.src) {
+    alert("Upload image and audio first!");
+    return;
+  }
+
+  const stream = canvas.captureStream(30);
+
+  const audio = new Audio(URL.createObjectURL(audioBlob));
+  const audioCtx = new AudioContext();
+
+  const source = audioCtx.createMediaElementSource(audio);
+  const dest = audioCtx.createMediaStreamDestination();
+
+  source.connect(dest);
+  source.connect(audioCtx.destination);
+
+  const combinedStream = new MediaStream([
+    ...stream.getTracks(),
+    ...dest.stream.getTracks()
+  ]);
+
+  recordedChunks = [];
+
+  mediaRecorder = new MediaRecorder(combinedStream, {
+    mimeType: "video/webm"
+  });
+
+  mediaRecorder.ondataavailable = (e) => {
+    if (e.data.size > 0) recordedChunks.push(e.data);
+  };
+
+  mediaRecorder.onstop = () => {
+    const blob = new Blob(recordedChunks, { type: "video/webm" });
+    const url = URL.createObjectURL(blob);
+    document.getElementById("preview").src = url;
+  };
+
+  mediaRecorder.start();
+  audio.play();
+
+  // 🔥 Keep canvas active (important fix)
+  const interval = setInterval(() => {
+    drawImageCover(image);
+  }, 1000 / 30);
+
+  audio.onended = () => {
+    clearInterval(interval);
+    mediaRecorder.stop();
+  };
+  
+}
+
+// ⬇ DOWNLOAD
+function downloadVideo() {
+  const video = document.getElementById("preview").src;
+
+  if (!video) {
+    alert("Generate video first!");
+    return;
+  }
+
+  const a = document.createElement("a");
+  a.href = video;
+  a.download = "insta-post-video.webm";
+  a.click();
+}
+</script>
+
+</body>
+</html>

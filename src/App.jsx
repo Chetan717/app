@@ -1,35 +1,38 @@
 import Home from "./Pages/Home";
-import { Login }         from "./Auth/Login";
-import { Signup }        from "./Auth/Signup";
-import { Forgetpin }     from "./Auth/ForgetPin";
-import ProtectedRoute    from "./Auth/ProtectedR";
-import Layout            from "./Layout";
-import MainSubscription  from "./Pages/Subscription/MainSubscription";
-import MlmProfile        from "./Pages/Mymlmprofile/MlmProfile";
+import { Login } from "./Auth/Login";
+import { Signup } from "./Auth/Signup";
+import { Forgetpin } from "./Auth/ForgetPin";
+import ProtectedRoute from "./Auth/ProtectedR";
+import Layout from "./Layout";
+import MainSubscription from "./Pages/Subscription/MainSubscription";
+import MlmProfile from "./Pages/Mymlmprofile/MlmProfile";
 import ProtectMlmProfile from "./Pages/SelectCompany/ProtectMlmProfile";
-import SelectComp        from "./Pages/SelectCompany/SelectComp";
+import ProtectSelectComp from "./Pages/SelectCompany/ProtectSelectComp"; // ✅ new
+import SelectComp from "./Pages/SelectCompany/SelectComp";
 import { Routes, Route } from "react-router";
 import AllTemplates from "./Pages/Homepage/Component/AllTemplates";
+import Mainform from "./Pages/mainform/Mainform";
+import MainEditor from "./Pages/Editor/MainEditor";
 
 function App() {
   return (
     <Routes>
 
       {/* ── Public auth routes ── */}
-      <Route path="/login"     element={<Login />} />
-      <Route path="/signup"    element={<Signup />} />
+      <Route path="/login" element={<Login />} />
+      <Route path="/signup" element={<Signup />} />
       <Route path="/forgetpin" element={<Forgetpin />} />
 
-      {/* ── Company selection page ──
-           Only needs login. No profile guard here —
-           this IS the page to fix the missing company. */}
+      {/* ── Company selection ── blocked if profile already exists */}
       <Route
         path="/selectcomp"
         element={
           <ProtectedRoute>
-            <Layout>
-              <SelectComp />
-            </Layout>
+            <ProtectSelectComp>  {/* ✅ redirects to "/" if mlmProfile exists */}
+              <Layout>
+                <SelectComp />
+              </Layout>
+            </ProtectSelectComp>
           </ProtectedRoute>
         }
       />
@@ -44,12 +47,13 @@ function App() {
           </ProtectedRoute>
         }
       />
-       <Route
+
+      <Route
         path="/alltemp"
         element={
           <ProtectedRoute>
             <ProtectMlmProfile>
-              <Layout><AllTemplates/></Layout>
+              <Layout><AllTemplates /></Layout>
             </ProtectMlmProfile>
           </ProtectedRoute>
         }
@@ -61,6 +65,31 @@ function App() {
           <ProtectedRoute>
             <ProtectMlmProfile>
               <Layout><MlmProfile /></Layout>
+          
+            </ProtectMlmProfile>
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/mlmform"
+        element={
+          <ProtectedRoute>
+            <ProtectMlmProfile>
+              <Layout>
+                <Mainform/>
+                </Layout>
+            </ProtectMlmProfile>
+          </ProtectedRoute>
+        }
+      />
+       <Route
+        path="/editor"
+        element={
+          <ProtectedRoute>
+            <ProtectMlmProfile>
+              <Layout>
+              <MainEditor/>
+                </Layout>
             </ProtectMlmProfile>
           </ProtectedRoute>
         }

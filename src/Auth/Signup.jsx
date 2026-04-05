@@ -36,27 +36,42 @@ export function Signup() {
   const [formError, setFormError] = useState("");
 
   // ── OTP state ─────────────────────────────────────────────────
-  const [sentOtp, setSentOtp] = useState(""); // OTP we sent
-  const [enteredOtp, setEnteredOtp] = useState(""); // OTP user types
+  const [sentOtp, setSentOtp] = useState("");
+  const [enteredOtp, setEnteredOtp] = useState("");
   const [otpError, setOtpError] = useState("");
-  const [userId, setUserId] = useState(""); // Firestore doc id
-  const [userMobile, setUserMobile] = useState(""); // for resend
+  const [userId, setUserId] = useState("");
+  const [userMobile, setUserMobile] = useState("");
+
+  // ── Refer state ───────────────────────────────────────────────
+  const [referInput, setReferInput] = useState("");
+  const [referMsg, setReferMsg] = useState(""); // green success msg
 
   // ── Helpers ───────────────────────────────────────────────────
-  const generateOTP = () => Math.floor(1000 + Math.random() * 9000).toString();
+
+  /**
+   * Generates refer code: 4 random CAPITAL letters + last 4 digits of mobile
+   * e.g. mobile = "9876543210" → "XKQT3210"
+   */
+  const generateReferCode = (mobile) => {
+    const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+    const randomPart = Array.from({ length: 4 }, () =>
+      chars[Math.floor(Math.random() * chars.length)]
+    ).join("");
+    const mobilePart = mobile.slice(-4); // last 4 digits
+    return randomPart + mobilePart;
+  };
+
+  const generateOTP = () =>
+    Math.floor(1000 + Math.random() * 9000).toString();
 
   const sendOtp = async (phoneNumber) => {
     const otp = generateOTP();
-
     await axios({
       method: "get",
       maxBodyLength: Infinity,
-      url: `https://2factor.in/API/V1/3b24364e-e422-11ee-8cbb-0200cd936042/SMS/${
-        "91" + phoneNumber
-      }/${otp}/MLMBOOSTER`,
+      url: `https://2factor.in/API/V1/3b24364e-e422-11ee-8cbb-0200cd936042/SMS/${"91" + phoneNumber}/${otp}/MLMBOOSTER`,
       headers: {},
     });
-
     return otp;
   };
 
@@ -65,7 +80,8 @@ export function Signup() {
       return "Name must be at least 3 characters";
     if (!/^[0-9]{10}$/.test(data.mobile))
       return "Mobile number must be exactly 10 digits";
-    if (!/^[0-9]{4}$/.test(data.pin)) return "PIN must be exactly 4 digits";
+    if (!/^[0-9]{4}$/.test(data.pin))
+      return "PIN must be exactly 4 digits";
     return null;
   };
 
@@ -88,11 +104,12 @@ export function Signup() {
     try {
       setLoading(true);
       setFormError("");
+      setReferMsg("");
 
-      // Check duplicate mobile
+      // ── Check duplicate mobile ──────────────────────────────
       const q = query(
         collection(db, "users"),
-        where("mobileNo", "==", data.mobile),
+        where("mobileNo", "==", data.mobile)
       );
       const snapshot = await getDocs(q);
       if (!snapshot.empty) {
@@ -100,24 +117,60 @@ export function Signup() {
         return;
       }
 
+      // ── Validate refer code if entered ──────────────────────
+      let referredByDocId = null;
+      const trimmedRefer = referInput.trim().toUpperCase();
+
+      if (trimmedRefer !== "") {
+        // Refer code format: 4 CAPS + 4 digits = 8 chars
+        if (!/^[A-Z]{4}[0-9]{4}$/.test(trimmedRefer)) {
+          setFormError("Invalid refer code format");
+          return;
+        }
+
+        const referQuery = query(
+          collection(db, "users"),
+          where("referCode", "==", trimmedRefer)
+        );
+        const referSnap = await getDocs(referQuery);
+
+        if (referSnap.empty) {
+          setFormError("Refer code not found");
+          return;
+        }
+
+        referredByDocId = referSnap.docs[0].id; // save referrer's doc id
+      }
+
+      // ── Generate refer code for new user ───────────────────
+      const referCode = generateReferCode(data.mobile);
+
+      // ── Send OTP ────────────────────────────────────────────
       const otp = await sendOtp(data.mobile);
+
+      // ── Save user to Firestore ──────────────────────────────
       const docRef = await addDoc(collection(db, "users"), {
         name: data.name,
         mobileNo: data.mobile,
         password: data.pin,
         createdAt: new Date(),
         isverified: false,
-        otp: otp, // ✅ store OTP
+        otp: otp,
+        referCode: referCode,       // ✅ their own refer code
+        referredBy: trimmedRefer || null,  // ✅ who referred them (null if none)
+        referCredit: 0,             // ✅ starts at 0
       });
 
-      // Send OTP
-
-      // Store in state so Step 2 can use them
+      // ── Save states for step 2 ──────────────────────────────
       setSentOtp(otp);
       setUserId(docRef.id);
       setUserMobile(data.mobile);
 
-      // Move to OTP step
+      // Store referrer doc id temporarily in state for credit after verify
+      if (referredByDocId) {
+        sessionStorage.setItem("referredByDocId", referredByDocId);
+      }
+
       setStep(2);
     } catch (error) {
       console.error("Signup Error:", error);
@@ -144,13 +197,31 @@ export function Signup() {
       setLoading(true);
       setOtpError("");
 
-      // Mark user as verified in Firestore
+      // ── Mark user as verified + clear OTP ──────────────────
       await updateDoc(doc(db, "users", userId), {
         isverified: true,
-        otp: "", // ✅ clear OTP after use
+        otp: "",
+        referCredit: referInput.trim() !== "" ? 5 : 0,
       });
 
-      // ✅ Success — show alert and go to login
+      // ── Give 10 referCredit to referrer ─────────────────────
+      const referredByDocId = sessionStorage.getItem("referredByDocId");
+      if (referredByDocId) {
+        // Fetch current credits of referrer
+        const referrerSnap = await getDocs(
+          query(collection(db, "users"), where("__name__", "==", referredByDocId))
+        );
+
+        if (!referrerSnap.empty) {
+          const currentCredits = referrerSnap.docs[0].data().referCredit || 0;
+          await updateDoc(doc(db, "users", referredByDocId), {
+            referCredit: currentCredits + 10,
+          });
+        }
+
+        sessionStorage.removeItem("referredByDocId");
+      }
+
       alert("🎉 Account created successfully! Please login.");
       navigate("/login");
     } catch (error) {
@@ -168,6 +239,10 @@ export function Signup() {
       setOtpError("");
       const otp = await sendOtp(userMobile);
       setSentOtp(otp);
+
+      // Update new OTP in Firestore too
+      await updateDoc(doc(db, "users", userId), { otp: otp });
+
       alert("OTP resent successfully!");
     } catch {
       setOtpError("Failed to resend OTP.");
@@ -220,6 +295,31 @@ export function Signup() {
                 ))}
               </InputOTP.Group>
             </InputOTP>
+          </div>
+
+          {/* Refer Code (optional) */}
+          <div className="flex flex-col gap-1">
+            <Label className="font-bold text-[#5865f2]">
+              Refer Code{" "}
+              <span className="text-gray-400 font-normal text-xs">
+                (optional)
+              </span>
+            </Label>
+            <input
+              type="text"
+              placeholder="e.g. ABCD1234"
+              maxLength={8}
+              value={referInput}
+              onChange={(e) => {
+                setReferInput(e.target.value.toUpperCase());
+                setReferMsg("");
+                setFormError("");
+              }}
+              className="h-12 px-3 border-2 border-gray-200 rounded-md w-[290px] text-sm tracking-widest font-mono uppercase outline-none focus:border-[#5865f2] transition"
+            />
+            {referMsg && (
+              <p className="text-green-500 text-xs mt-1">{referMsg}</p>
+            )}
           </div>
 
           {/* Error */}

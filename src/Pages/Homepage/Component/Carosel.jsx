@@ -20,8 +20,6 @@ export default function Carosel() {
     loadTrending();
   }, []);
 
-  console.log(slides);
-
   return (
     <div className="flex mt-1 justify-center items-center p-1 lg:h-[300px] h-[200px] w-full ">
       <Swiper

@@ -1,23 +1,24 @@
-import { useState, useRef, useCallback, useEffect } from "react";
-import { Modal, Button } from "@heroui/react";
-
-// ── Firebase ──────────────────────────────────────────────────
+import { useState, useRef, useEffect } from "react";
 import { db, app } from "../../../firebase";
-import { collection, addDoc, serverTimestamp } from "firebase/firestore";
 import {
-  getStorage,
-  ref as storageRef,
-  uploadBytes,
-  getDownloadURL,
+  collection, addDoc, updateDoc, doc,
+  serverTimestamp, query, where, getDocs,
+} from "firebase/firestore";
+import {
+  getStorage, ref as storageRef,
+  uploadBytes, getDownloadURL,
 } from "firebase/storage";
+import MultiImagePicker from "./MultiImagePicker";
+import { ImageEditorCanvas } from "./ImageEditorCanvas";
+import { toast } from "@heroui/react"; // ✅ added
 
 const storage = getStorage(app);
 
 // ════════════════════════════════════════════════════════════
-// REMOVE.BG — rotates through keys on 402 / 429
+// REMOVE.BG
 // ════════════════════════════════════════════════════════════
 export const REMOVE_BG_API_KEYS = [
-  "t5JR6JsNU1D1N4QHMZjCfSLN",
+  "e69bj6px7qJKw5x4N1XepLM9",
   "YOUR_KEY_2",
   "YOUR_KEY_3",
 ];
@@ -42,253 +43,7 @@ export async function removeBackground(file) {
 }
 
 // ════════════════════════════════════════════════════════════
-// IMAGE EDITOR — used ONLY for Profile Photo
-// Freehand crop (drag corners / drag inside) + Rotate + Mirror + Filters
-// ════════════════════════════════════════════════════════════
-export function ImageEditorCanvas({ src, onDone, onCancel }) {
-  const displayRef = useRef(null);
-  const imgRef     = useRef(null);
-
-  const [rotation, setRotation] = useState(0);
-  const [flipH,    setFlipH]    = useState(false);
-  const [flipV,    setFlipV]    = useState(false);
-  const [filter,   setFilter]   = useState("none");
-  const [crop,     setCrop]     = useState({ x: 0.1, y: 0.1, w: 0.8, h: 0.8 });
-  const dragState  = useRef(null);
-  const CANVAS_SIZE = 320;
-
-  const FILTERS = [
-    { label: "None",      value: "none" },
-    { label: "Grayscale", value: "grayscale(100%)" },
-    { label: "Sepia",     value: "sepia(80%)" },
-    { label: "Warm",      value: "sepia(40%) saturate(150%)" },
-    { label: "Cool",      value: "hue-rotate(200deg) saturate(120%)" },
-    { label: "Vivid",     value: "saturate(200%) contrast(110%)" },
-    { label: "Fade",      value: "opacity(70%) brightness(110%)" },
-  ];
-
-  const drawDisplay = useCallback(() => {
-    const canvas = displayRef.current;
-    const img    = imgRef.current;
-    if (!canvas || !img) return;
-    canvas.width = canvas.height = CANVAS_SIZE;
-    const ctx = canvas.getContext("2d");
-    ctx.clearRect(0, 0, CANVAS_SIZE, CANVAS_SIZE);
-
-    // draw transformed image
-    ctx.save();
-    ctx.translate(CANVAS_SIZE / 2, CANVAS_SIZE / 2);
-    ctx.rotate((rotation * Math.PI) / 180);
-    ctx.scale(flipH ? -1 : 1, flipV ? -1 : 1);
-    ctx.filter = filter;
-    const s = Math.min(img.naturalWidth, img.naturalHeight);
-    ctx.drawImage(img, -s / 2, -s / 2, s, s);
-    ctx.restore();
-
-    // crop overlay
-    const { x, y, w, h } = crop;
-    const px = x * CANVAS_SIZE, py = y * CANVAS_SIZE;
-    const pw = w * CANVAS_SIZE, ph = h * CANVAS_SIZE;
-
-    ctx.save();
-    ctx.fillStyle = "rgba(0,0,0,0.45)";
-    ctx.fillRect(0, 0, CANVAS_SIZE, py);
-    ctx.fillRect(0, py + ph, CANVAS_SIZE, CANVAS_SIZE - py - ph);
-    ctx.fillRect(0, py, px, ph);
-    ctx.fillRect(px + pw, py, CANVAS_SIZE - px - pw, ph);
-
-    ctx.strokeStyle = "#6366f1";
-    ctx.lineWidth   = 2;
-    ctx.strokeRect(px, py, pw, ph);
-
-    // rule-of-thirds
-    ctx.strokeStyle = "rgba(255,255,255,0.35)";
-    ctx.lineWidth   = 0.8;
-    for (let i = 1; i < 3; i++) {
-      ctx.beginPath(); ctx.moveTo(px + (pw / 3) * i, py);
-      ctx.lineTo(px + (pw / 3) * i, py + ph); ctx.stroke();
-      ctx.beginPath(); ctx.moveTo(px, py + (ph / 3) * i);
-      ctx.lineTo(px + pw, py + (ph / 3) * i); ctx.stroke();
-    }
-
-    // corner handles
-    const hs = 10;
-    ctx.fillStyle = "#6366f1";
-    [[px, py], [px + pw - hs, py], [px, py + ph - hs], [px + pw - hs, py + ph - hs]]
-      .forEach(([hx, hy]) => ctx.fillRect(hx, hy, hs, hs));
-    ctx.restore();
-  }, [rotation, flipH, flipV, filter, crop]);
-
-  useEffect(() => {
-    const img = new Image();
-    img.crossOrigin = "anonymous";
-    img.onload = () => { imgRef.current = img; drawDisplay(); };
-    img.src = src;
-  }, [src]);
-
-  useEffect(() => { if (imgRef.current) drawDisplay(); }, [drawDisplay]);
-
-  const hitTest = (nx, ny) => {
-    const { x, y, w, h } = crop;
-    const hs = 12 / CANVAS_SIZE;
-    for (const c of [
-      { type: "tl", cx: x,     cy: y     },
-      { type: "tr", cx: x + w, cy: y     },
-      { type: "bl", cx: x,     cy: y + h },
-      { type: "br", cx: x + w, cy: y + h },
-    ]) {
-      if (Math.abs(nx - c.cx) < hs && Math.abs(ny - c.cy) < hs) return c.type;
-    }
-    if (nx > x && nx < x + w && ny > y && ny < y + h) return "move";
-    return null;
-  };
-
-  const normPos = (e) => {
-    const rect = displayRef.current.getBoundingClientRect();
-    const clientX = e.touches ? e.touches[0].clientX : e.clientX;
-    const clientY = e.touches ? e.touches[0].clientY : e.clientY;
-    return { nx: (clientX - rect.left) / rect.width, ny: (clientY - rect.top) / rect.height };
-  };
-
-  const onPointerDown = (e) => {
-    e.preventDefault();
-    const { nx, ny } = normPos(e);
-    const type = hitTest(nx, ny);
-    if (!type) return;
-    dragState.current = { type, startX: nx, startY: ny, origCrop: { ...crop } };
-  };
-
-  const onPointerMove = (e) => {
-    if (!dragState.current) return;
-    e.preventDefault();
-    const { nx, ny } = normPos(e);
-    const ds = dragState.current;
-    const dx = nx - ds.startX, dy = ny - ds.startY;
-    const o  = ds.origCrop, MIN = 0.08;
-    setCrop(() => {
-      let { x, y, w, h } = o;
-      if (ds.type === "move") {
-        x = Math.max(0, Math.min(1 - w, o.x + dx));
-        y = Math.max(0, Math.min(1 - h, o.y + dy));
-      } else if (ds.type === "tl") {
-        const nx2 = Math.min(o.x + o.w - MIN, o.x + dx);
-        const ny2 = Math.min(o.y + o.h - MIN, o.y + dy);
-        w = o.w - (nx2 - o.x); h = o.h - (ny2 - o.y); x = nx2; y = ny2;
-      } else if (ds.type === "tr") {
-        w = Math.max(MIN, o.w + dx);
-        const ny2 = Math.min(o.y + o.h - MIN, o.y + dy);
-        h = o.h - (ny2 - o.y); y = ny2;
-      } else if (ds.type === "bl") {
-        const nx2 = Math.min(o.x + o.w - MIN, o.x + dx);
-        w = o.w - (nx2 - o.x); x = nx2; h = Math.max(MIN, o.h + dy);
-      } else if (ds.type === "br") {
-        w = Math.max(MIN, o.w + dx); h = Math.max(MIN, o.h + dy);
-      }
-      x = Math.max(0, x); y = Math.max(0, y);
-      if (x + w > 1) w = 1 - x;
-      if (y + h > 1) h = 1 - y;
-      return { x, y, w, h };
-    });
-  };
-
-  const onPointerUp = () => { dragState.current = null; };
-
-  const onMouseMoveForCursor = (e) => {
-    const { nx, ny } = normPos(e);
-    const t = hitTest(nx, ny);
-    const map = { tl: "nwse-resize", tr: "nesw-resize", bl: "nesw-resize", br: "nwse-resize", move: "move" };
-    displayRef.current.style.cursor = map[t] || "crosshair";
-  };
-
-  const handleDone = () => {
-    const img = imgRef.current; if (!img) return;
-    const out = document.createElement("canvas");
-    out.width = out.height = CANVAS_SIZE;
-    const ctx = out.getContext("2d");
-    ctx.save();
-    ctx.translate(CANVAS_SIZE / 2, CANVAS_SIZE / 2);
-    ctx.rotate((rotation * Math.PI) / 180);
-    ctx.scale(flipH ? -1 : 1, flipV ? -1 : 1);
-    ctx.filter = filter;
-    const s = Math.min(img.naturalWidth, img.naturalHeight);
-    ctx.drawImage(img, -s / 2, -s / 2, s, s);
-    ctx.restore();
-    const { x, y, w, h } = crop;
-    const cropped = document.createElement("canvas");
-    cropped.width = w * CANVAS_SIZE; cropped.height = h * CANVAS_SIZE;
-    cropped.getContext("2d").drawImage(out, x * CANVAS_SIZE, y * CANVAS_SIZE, w * CANVAS_SIZE, h * CANVAS_SIZE, 0, 0, w * CANVAS_SIZE, h * CANVAS_SIZE);
-    cropped.toBlob((blob) => onDone(blob), "image/png");
-  };
-
-  return (
-    <div className="flex flex-col items-center gap-4">
-      <div className="relative select-none">
-        <canvas
-          ref={displayRef}
-          style={{ width: CANVAS_SIZE, height: CANVAS_SIZE, touchAction: "none", borderRadius: 12, display: "block" }}
-          onMouseDown={onPointerDown}
-          onMouseMove={(e) => { onPointerMove(e); onMouseMoveForCursor(e); }}
-          onMouseUp={onPointerUp} onMouseLeave={onPointerUp}
-          onTouchStart={onPointerDown} onTouchMove={onPointerMove} onTouchEnd={onPointerUp}
-        />
-        <p className="text-center text-xs text-slate-400 mt-1.5">Drag corners to resize • Drag inside to move</p>
-      </div>
-      <div className="flex flex-wrap justify-center gap-2">
-        <button onClick={() => setRotation((r) => r - 90)} className="px-3 py-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 text-sm font-medium transition">↺ −90°</button>
-        <button onClick={() => setRotation((r) => r + 90)} className="px-3 py-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 text-sm font-medium transition">↻ +90°</button>
-        <button onClick={() => setFlipH((v) => !v)} className={`px-3 py-1.5 rounded-lg text-sm font-medium transition ${flipH ? "bg-indigo-500 text-white" : "bg-slate-100 hover:bg-slate-200"}`}>⇄ Flip H</button>
-        <button onClick={() => setFlipV((v) => !v)} className={`px-3 py-1.5 rounded-lg text-sm font-medium transition ${flipV ? "bg-indigo-500 text-white" : "bg-slate-100 hover:bg-slate-200"}`}>⇅ Flip V</button>
-        <button onClick={() => setCrop({ x: 0.1, y: 0.1, w: 0.8, h: 0.8 })} className="px-3 py-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 text-sm font-medium transition">↺ Reset</button>
-      </div>
-      <div className="flex flex-wrap justify-center gap-2">
-        {FILTERS.map((f) => (
-          <button key={f.value} onClick={() => setFilter(f.value)}
-            className={`px-3 py-1 rounded-full text-xs font-medium transition border ${filter === f.value ? "bg-indigo-500 text-white border-indigo-500" : "bg-white border-slate-300 hover:border-indigo-400"}`}>
-            {f.label}
-          </button>
-        ))}
-      </div>
-      <div className="flex gap-3">
-        <button onClick={onCancel} className="px-5 py-2 rounded-lg border border-slate-300 text-sm hover:bg-slate-50 transition">Cancel</button>
-        <button onClick={handleDone} className="px-5 py-2 rounded-lg bg-indigo-600 text-white text-sm font-medium hover:bg-indigo-700 transition">✂️ Use Cropped Image</button>
-      </div>
-    </div>
-  );
-}
-
-// ════════════════════════════════════════════════════════════
-// REUSABLE: SimpleImagePicker  (no editor — just upload + preview)
-// ════════════════════════════════════════════════════════════
-function SimpleImagePicker({ previewURL, onFileSelect, inputRef, buttonLabel = "Upload image", previewClass }) {
-  return (
-    <div className="flex items-center gap-4">
-      {previewURL ? (
-        <img src={previewURL} alt="Preview" className={previewClass} />
-      ) : (
-        <div className="h-16 w-24 border-2 border-dashed border-slate-300 rounded-lg bg-slate-50 flex items-center justify-center text-slate-400 text-xs">
-          No image
-        </div>
-      )}
-      <div className="flex flex-col gap-2">
-        <button type="button" onClick={() => inputRef.current?.click()}
-          className="px-4 py-2 text-sm rounded-lg bg-indigo-50 border border-indigo-300 text-indigo-700 hover:bg-indigo-100 transition">
-          {buttonLabel}
-        </button>
-        {previewURL && (
-          <button type="button" onClick={() => onFileSelect(null)}
-            className="px-4 py-2 text-sm rounded-lg bg-red-50 border border-red-200 text-red-600 hover:bg-red-100 transition">
-            ✕ Remove
-          </button>
-        )}
-      </div>
-      <input ref={inputRef} type="file" accept="image/*" className="hidden"
-        onChange={(e) => { const f = e.target.files?.[0]; if (f) onFileSelect(f); e.target.value = ""; }} />
-    </div>
-  );
-}
-
-// ════════════════════════════════════════════════════════════
-// SOCIAL ICONS — inline SVG
+// SOCIAL ICONS
 // ════════════════════════════════════════════════════════════
 const SocialIcon = ({ name, active }) => {
   const icons = {
@@ -301,8 +56,8 @@ const SocialIcon = ({ name, active }) => {
       <svg viewBox="0 0 24 24" className="w-6 h-6">
         <defs>
           <linearGradient id="ig-grad" x1="0%" y1="100%" x2="100%" y2="0%">
-            <stop offset="0%"   stopColor={active ? "#fff" : "#f09433"} />
-            <stop offset="50%"  stopColor={active ? "#fff" : "#e6683c"} />
+            <stop offset="0%" stopColor={active ? "#fff" : "#f09433"} />
+            <stop offset="50%" stopColor={active ? "#fff" : "#e6683c"} />
             <stop offset="100%" stopColor={active ? "#fff" : "#bc1888"} />
           </linearGradient>
         </defs>
@@ -324,83 +79,178 @@ const SocialIcon = ({ name, active }) => {
 };
 
 // ════════════════════════════════════════════════════════════
-// MAIN COMPONENT
+// HELPERS
 // ════════════════════════════════════════════════════════════
+function getUserMlm() {
+  try { return JSON.parse(localStorage.getItem("usermlm") || "{}"); }
+  catch { return {}; }
+}
+
 const SOCIAL_PLATFORMS = ["Facebook", "Instagram", "Youtube", "X"];
 
-const initialForm = () => ({
-  // 0 ▸ Logo
-  logoType:            "company",  // "company" | "custom"
-  logoSelected:        "",         // link from company logos[]
-  logoCustomFile:      null,
-  logoCustomURL:       null,
-  // 1 ▸ Identity
-  salutation:          "Mr",
-  name:                "",
-  mobile:              "",
-  designation:         "",
-  // 2 ▸ Profile photo
-  profileImageBlob:    null,
-  profileImageURL:     null,
-  // 3 ▸ Topup line
-  topuplineType:       "company",  // "company" | "custom"
-  topuplineSelected:   "",
-  topuplineCustomFile: null,
-  topuplineCustomURL:  null,
-  // 4 ▸ Socials
-  socials:             { Facebook: "", Instagram: "", Youtube: "", X: "" },
-  socialSameId:        "",
-  socialSameSelected:  [],
+const initialForm = (mobile = "") => ({
+  logoSelectedLinks: [],
+  logoCustomFiles: [],
+  salutation: "Mr",
+  name: "",
+  mobile,
+  designation: "",
+  profileImageBlobs: [],
+  profileImageBlobPreviews: [],
+  existingProfileImageURLs: [],
+  _pendingProfileBlobs: [],
+  topupSelectedLinks: [],
+  topupCustomFiles: [],
+  socials: { Facebook: "", Instagram: "", Youtube: "", X: "" },
+  socialSameId: "",
+  socialSameSelected: [],
 });
 
-export default function MLMProfileModal({ triggerLabel = "Create MLM Profile" }) {
-  const [open,        setOpen]        = useState(false);
-  const [form,        setForm]        = useState(initialForm());
-  const [errors,      setErrors]      = useState({});
-  const [step,        setStep]        = useState("form"); // "form" | "editor"
-  const [editorSrc,   setEditorSrc]   = useState(null);
-  const [removingBg,  setRemovingBg]  = useState(false);
-  const [saving,      setSaving]      = useState(false);
-  const [saveError,   setSaveError]   = useState(null);
-  const [saveSuccess, setSaveSuccess] = useState(false);
+// ════════════════════════════════════════════════════════════
+// PAGE COMPONENT
+// ════════════════════════════════════════════════════════════
+export default function MLMProfilePage() {
+  const userMlm = getUserMlm();
+  const userMobile = (userMlm.mobileNo || "").trim();
+
+  const [form, setForm] = useState(initialForm(userMobile));
+  const [errors, setErrors] = useState({});
+  const [step, setStep] = useState("form");
+  const [editorSrc, setEditorSrc] = useState(null);
+  const [editingProfileIndex, setEditingProfileIndex] = useState(null);
+  const [removingBg, setRemovingBg] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [saveError, setSaveError] = useState(null);
+  const [loadingProfile, setLoadingProfile] = useState(true);
+  const [existingDocId, setExistingDocId] = useState(null);
 
   const profileInputRef = useRef(null);
-  const logoInputRef    = useRef(null);
-  const topupInputRef   = useRef(null);
+  const logoInputRef = useRef(null);
+  const topupInputRef = useRef(null);
 
-  // ── Read localStorage once ────────────────────────────────
+  const isEditMode = !!existingDocId;
+
   const company = (() => {
     try { return JSON.parse(localStorage.getItem("selectedCompany") || "{}"); }
     catch { return {}; }
   })();
 
-  const logos      = Array.isArray(company?.logos)      ? company.logos      : [];
+  const logos = Array.isArray(company?.logos) ? company.logos : [];
   const topuplines = Array.isArray(company?.topuplines) ? company.topuplines : [];
-  const designations = Array.isArray(company?.designation)
-    ? company.designation
-    : typeof company?.designation === "string" && company.designation
-      ? [company.designation] : [];
+  const designations = Array.isArray(company?.designation) ? company.designation : [];
+
+  // ── Fetch existing profile on mount ────────────────────────
+  useEffect(() => {
+    if (!userMobile) { setLoadingProfile(false); return; }
+
+    const fetchProfile = async () => {
+      setLoadingProfile(true);
+      try {
+        const q = query(collection(db, "mlmprofiles"), where("mobile", "==", userMobile));
+        const snap = await getDocs(q);
+
+        if (!snap.empty) {
+          const docSnap = snap.docs[0];
+          const data = docSnap.data();
+          setExistingDocId(docSnap.id);
+
+          const fullName = data.fullName || "";
+          const dotIdx = fullName.indexOf(".");
+          const salutation = dotIdx !== -1 ? fullName.slice(0, dotIdx) : "Mr";
+          const name = dotIdx !== -1 ? fullName.slice(dotIdx + 1) : fullName;
+
+          setForm({
+            logoSelectedLinks: data.logoURLs || [],
+            logoCustomFiles: [],
+            salutation,
+            name,
+            mobile: userMobile,
+            designation: data.designation || "",
+            profileImageBlobs: [],
+            profileImageBlobPreviews: [],
+            existingProfileImageURLs: data.profileImageURLs || [],
+            _pendingProfileBlobs: [],
+            topupSelectedLinks: data.topuplineURLs || [],
+            topupCustomFiles: [],
+            socials: data.socials || { Facebook: "", Instagram: "", Youtube: "", X: "" },
+            socialSameId: "",
+            socialSameSelected: [],
+          });
+        } else {
+          setExistingDocId(null);
+          setForm(initialForm(userMobile));
+        }
+      } catch (err) {
+        console.error("Failed to fetch profile:", err);
+        setForm(initialForm(userMobile));
+      } finally {
+        setLoadingProfile(false);
+      }
+    };
+
+    fetchProfile();
+  }, [userMobile]);
 
   const setField = (key, val) => setForm((f) => ({ ...f, [key]: val }));
+  const clearError = (key) => setErrors((prev) => ({ ...prev, [key]: undefined }));
 
-  // ── Logo file pick (no editor) ────────────────────────────
-  const handleLogoFileSelect = (file) => {
-    if (!file) {
-      setForm((f) => ({ ...f, logoCustomFile: null, logoCustomURL: null }));
-      return;
-    }
-    setForm((f) => ({ ...f, logoCustomFile: file, logoCustomURL: URL.createObjectURL(file) }));
-  };
+  // ── Logo ───────────────────────────────────────────────────
+  const handleLogoToggleLink = (link) =>
+    setForm((f) => ({
+      ...f,
+      logoSelectedLinks: f.logoSelectedLinks.includes(link)
+        ? f.logoSelectedLinks.filter((l) => l !== link)
+        : [...f.logoSelectedLinks, link],
+    }));
 
-  // ── Profile photo: remove bg → editor ────────────────────
+  const handleLogoAddCustomFiles = (files) =>
+    setForm((f) => ({
+      ...f,
+      logoCustomFiles: [
+        ...f.logoCustomFiles,
+        ...files.map((file) => ({ file, previewURL: URL.createObjectURL(file) })),
+      ],
+    }));
+
+  const handleLogoRemoveCustomFile = (index) =>
+    setForm((f) => ({ ...f, logoCustomFiles: f.logoCustomFiles.filter((_, i) => i !== index) }));
+
+  // ── Topupline ──────────────────────────────────────────────
+  const handleTopupToggleLink = (link) =>
+    setForm((f) => ({
+      ...f,
+      topupSelectedLinks: f.topupSelectedLinks.includes(link)
+        ? f.topupSelectedLinks.filter((l) => l !== link)
+        : [...f.topupSelectedLinks, link],
+    }));
+
+  const handleTopupAddCustomFiles = (files) =>
+    setForm((f) => ({
+      ...f,
+      topupCustomFiles: [
+        ...f.topupCustomFiles,
+        ...files.map((file) => ({ file, previewURL: URL.createObjectURL(file) })),
+      ],
+    }));
+
+  const handleTopupRemoveCustomFile = (index) =>
+    setForm((f) => ({ ...f, topupCustomFiles: f.topupCustomFiles.filter((_, i) => i !== index) }));
+
+  // ── Profile photo ──────────────────────────────────────────
   const handleProfileFileSelect = async (e) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
+    const files = Array.from(e.target.files || []);
+    if (!files.length) return;
     setRemovingBg(true);
     try {
-      const noGbBlob = await removeBackground(file);
-      const blob = noGbBlob || file;
-      setEditorSrc(URL.createObjectURL(blob));
+      const blobs = await Promise.all(
+        files.map(async (file) => {
+          const noBgBlob = await removeBackground(file);
+          return noBgBlob || file;
+        })
+      );
+      setEditorSrc(URL.createObjectURL(blobs[0]));
+      setEditingProfileIndex("new");
+      setForm((f) => ({ ...f, _pendingProfileBlobs: blobs.slice(1) }));
       setStep("editor");
     } catch (err) {
       console.error(err);
@@ -411,21 +261,91 @@ export default function MLMProfileModal({ triggerLabel = "Create MLM Profile" })
   };
 
   const handleEditorDone = (blob) => {
-    setForm((f) => ({ ...f, profileImageBlob: blob, profileImageURL: URL.createObjectURL(blob) }));
+    setForm((f) => {
+      if (editingProfileIndex === "new") {
+        const pending = f._pendingProfileBlobs || [];
+        const newBlobs = [blob, ...pending];
+        const newPreviews = newBlobs.map((b) => URL.createObjectURL(b));
+        return {
+          ...f,
+          profileImageBlobs: [...f.profileImageBlobs, ...newBlobs],
+          profileImageBlobPreviews: [...f.profileImageBlobPreviews, ...newPreviews],
+          _pendingProfileBlobs: [],
+        };
+      } else if (typeof editingProfileIndex === "number") {
+        const existingCount = f.existingProfileImageURLs.length;
+        if (editingProfileIndex < existingCount) {
+          const urls = [...f.existingProfileImageURLs];
+          urls.splice(editingProfileIndex, 1);
+          return {
+            ...f,
+            existingProfileImageURLs: urls,
+            profileImageBlobs: [...f.profileImageBlobs, blob],
+            profileImageBlobPreviews: [...f.profileImageBlobPreviews, URL.createObjectURL(blob)],
+          };
+        } else {
+          const blobIdx = editingProfileIndex - existingCount;
+          const blobs = [...f.profileImageBlobs];
+          const previews = [...f.profileImageBlobPreviews];
+          blobs[blobIdx] = blob;
+          previews[blobIdx] = URL.createObjectURL(blob);
+          return { ...f, profileImageBlobs: blobs, profileImageBlobPreviews: previews };
+        }
+      }
+      return f;
+    });
+    setEditingProfileIndex(null);
     setStep("form");
     setEditorSrc(null);
   };
 
-  // ── Topupline file pick (no editor) ──────────────────────
-  const handleTopupFileSelect = (file) => {
-    if (!file) {
-      setForm((f) => ({ ...f, topuplineCustomFile: null, topuplineCustomURL: null }));
-      return;
-    }
-    setForm((f) => ({ ...f, topuplineCustomFile: file, topuplineCustomURL: URL.createObjectURL(file) }));
+  const handleRemoveProfileImage = (combinedIdx) => {
+    setForm((f) => {
+      const existingCount = f.existingProfileImageURLs.length;
+      if (combinedIdx < existingCount) {
+        return { ...f, existingProfileImageURLs: f.existingProfileImageURLs.filter((_, i) => i !== combinedIdx) };
+      }
+      const blobIdx = combinedIdx - existingCount;
+      return {
+        ...f,
+        profileImageBlobs: f.profileImageBlobs.filter((_, i) => i !== blobIdx),
+        profileImageBlobPreviews: f.profileImageBlobPreviews.filter((_, i) => i !== blobIdx),
+      };
+    });
   };
 
-  // ── Social same-id ────────────────────────────────────────
+  const handleEditProfileImage = async (combinedIdx) => {
+    const existingCount = form.existingProfileImageURLs.length;
+    if (combinedIdx < existingCount) {
+      setRemovingBg(true);
+      try {
+        const res = await fetch(form.existingProfileImageURLs[combinedIdx]);
+        if (!res.ok) throw new Error("Fetch failed");
+        const blob = await res.blob();
+        const blobURL = URL.createObjectURL(blob);
+        setEditingProfileIndex(combinedIdx);
+        setEditorSrc(blobURL);
+        setStep("editor");
+      } catch (err) {
+        console.error("Failed to load image for editing:", err);
+      } finally {
+        setRemovingBg(false);
+      }
+    } else {
+      const blobIdx = combinedIdx - existingCount;
+      const blobURL = form.profileImageBlobPreviews[blobIdx];
+      setEditingProfileIndex(combinedIdx);
+      setEditorSrc(blobURL);
+      setStep("editor");
+    }
+  };
+
+  const allProfileImages = [
+    ...form.existingProfileImageURLs.map((url) => ({ url, isExisting: true })),
+    ...form.profileImageBlobPreviews.map((url) => ({ url, isExisting: false })),
+  ];
+
+  // ── Social ─────────────────────────────────────────────────
   const handleSocialSameToggle = (platform) => {
     setForm((f) => {
       const sel = f.socialSameSelected.includes(platform)
@@ -445,19 +365,16 @@ export default function MLMProfileModal({ triggerLabel = "Create MLM Profile" })
     });
   };
 
-  // ── Validation ────────────────────────────────────────────
+  // ── Validation ─────────────────────────────────────────────
   const validate = () => {
     const e = {};
-    if (!form.name.trim())    e.name = "Name is required";
-    if (!form.mobile.trim())  e.mobile = "Mobile number is required";
-    else if (!/^\d{10,15}$/.test(form.mobile.replace(/\s/g, "")))
-      e.mobile = "Enter a valid mobile number";
-    if (!form.designation)    e.designation = "Select a designation";
+    if (!form.name.trim()) e.name = "Name is required";
+    if (!form.designation) e.designation = "Select a designation";
     setErrors(e);
     return Object.keys(e).length === 0;
   };
 
-  // ── Firebase storage upload ───────────────────────────────
+  // ── Firebase helpers ───────────────────────────────────────
   const uploadFile = async (file, path) => {
     const r = storageRef(storage, path);
     await uploadBytes(r, file);
@@ -470,399 +387,392 @@ export default function MLMProfileModal({ triggerLabel = "Create MLM Profile" })
     return getDownloadURL(r);
   };
 
-  // ── Save to Firestore ─────────────────────────────────────
+  // ── Save ───────────────────────────────────────────────────
   const handleSave = async () => {
     if (!validate()) return;
     setSaving(true);
     setSaveError(null);
     try {
-      const uid = Date.now().toString(36);
+      const uid = existingDocId || Date.now().toString(36);
 
-      // Logo
-      const logoURL =
-        form.logoType === "custom" && form.logoCustomFile
-          ? await uploadFile(form.logoCustomFile, `mlmprofiles/${uid}/logo.png`)
-          : form.logoType === "company" ? form.logoSelected : null;
+      const uploadedLogoURLs = await Promise.all(
+        form.logoCustomFiles.map((item, i) =>
+          uploadFile(item.file, `mlmprofiles/${uid}/logo_custom_${i}.png`)
+        )
+      );
+      const allLogoURLs = [...form.logoSelectedLinks, ...uploadedLogoURLs];
 
-      // Profile photo
-      const profileImgURL = form.profileImageBlob
-        ? await uploadBlob(form.profileImageBlob, `mlmprofiles/${uid}/profile.png`)
-        : null;
+      const newlyUploadedProfileURLs = await Promise.all(
+        form.profileImageBlobs.map((blob, i) =>
+          uploadBlob(blob, `mlmprofiles/${uid}/profile_${Date.now()}_${i}.png`)
+        )
+      );
+      const allProfileImageURLs = [...form.existingProfileImageURLs, ...newlyUploadedProfileURLs];
 
-      // Topupline
-      const topupImgURL =
-        form.topuplineType === "custom" && form.topuplineCustomFile
-          ? await uploadFile(form.topuplineCustomFile, `mlmprofiles/${uid}/topupline.png`)
-          : form.topuplineType === "company" ? form.topuplineSelected : null;
+      const uploadedTopupURLs = await Promise.all(
+        form.topupCustomFiles.map((item, i) =>
+          uploadFile(item.file, `mlmprofiles/${uid}/topup_custom_${i}.png`)
+        )
+      );
+      const allTopupURLs = [...form.topupSelectedLinks, ...uploadedTopupURLs];
 
-      await addDoc(collection(db, "mlmprofiles"), {
-        fullName:          `${form.salutation}.${form.name.trim()}`,
-        mobile:            form.mobile.trim(),
-        designation:       form.designation,
-        logoURL,
-        profileImageURL:   profileImgURL,
-        topuplineImageURL: topupImgURL,
-        socials:           form.socials,
-        companyId:         company?.id || null,
-        createdAt:         serverTimestamp(),
-      });
+      const profileData = {
+        fullName: `${form.salutation}.${form.name.trim()}`,
+        mobile: userMobile,
+        designation: form.designation,
+        logoURLs: allLogoURLs,
+        profileImageURLs: allProfileImageURLs,
+        topuplineURLs: allTopupURLs,
+        socials: form.socials,
+        companyId: company?.id || null,
+        updatedAt: serverTimestamp(),
+      };
 
-      setSaveSuccess(true);
-      setTimeout(() => {
-        setSaveSuccess(false);
-        setOpen(false);
-        setForm(initialForm());
-        setStep("form");
-      }, 1500);
+      if (isEditMode) {
+        // ── Update existing doc ──────────────────────────────
+        await updateDoc(doc(db, "mlmprofiles", existingDocId), profileData);
+
+        // ✅ Update localStorage with latest data
+        localStorage.setItem(
+          "mlmProfile",
+          JSON.stringify({ id: existingDocId, ...profileData })
+        );
+      } else {
+        // ── Create new doc ───────────────────────────────────
+        const newDoc = await addDoc(collection(db, "mlmprofiles"), {
+          ...profileData,
+          createdAt: serverTimestamp(),
+        });
+
+        // ✅ Save new profile to localStorage so route guards work
+        localStorage.setItem(
+          "mlmProfile",
+          JSON.stringify({ id: newDoc.id, ...profileData })
+        );
+      }
+
+      // ✅ Toast on screen
+      toast.success(isEditMode ? "Profile updated successfully!" : "Profile saved successfully!");
+
+      // ✅ Reload after short delay so toast is visible
+      setTimeout(() => window.location.reload(), 1000);
+
     } catch (err) {
+      console.error("Save error:", err);
       setSaveError(err?.message || "Failed to save. Please try again.");
     } finally {
       setSaving(false);
     }
   };
 
-  const handleClose = () => {
-    setOpen(false);
-    setStep("form");
-    setEditorSrc(null);
-    setSaveError(null);
-    setSaveSuccess(false);
-  };
-
-  // ════════════════════════════════════════════════════════
+  // ════════════════════════════════════════════════════════════
   // RENDER
-  // ════════════════════════════════════════════════════════
+  // ════════════════════════════════════════════════════════════
+
+  // ── Editor view ────────────────────────────────────────────
+  if (step === "editor" && editorSrc) {
+    return (
+      <div className="flex flex-col dark:bg-black items-center justify-start min-h-screen p-2 bg-slate-50">
+        <div className="w-full dark:bg-black max-w-full bg-white rounded-2xl shadow-lg p-6">
+          <h2 className="text-base dark:text-white font-semibold text-slate-700 mb-4 text-center">
+            Crop & Edit Photo
+          </h2>
+          <ImageEditorCanvas
+            key={editorSrc}
+            src={editorSrc}
+            onDone={handleEditorDone}
+            onCancel={() => {
+              setStep("form");
+              setEditorSrc(null);
+              setEditingProfileIndex(null);
+            }}
+          />
+        </div>
+      </div>
+    );
+  }
+
+  // ── Loading skeleton ───────────────────────────────────────
+  if (loadingProfile) {
+    return (
+      <div className="max-w-lg mx-auto px-4 py-8 flex flex-col gap-4 animate-pulse">
+        <div className="h-8 w-48 bg-slate-200 rounded-xl" />
+        {[...Array(6)].map((_, i) => (
+          <div key={i} className="h-12 bg-slate-100 rounded-xl" />
+        ))}
+      </div>
+    );
+  }
+
+  // ── Main form ──────────────────────────────────────────────
   return (
-    <>
-      <Button
-        onPress={() => setOpen(true)}
-        className="bg-indigo-600 text-white font-semibold px-6 py-2.5 rounded-xl hover:bg-indigo-700 transition shadow-md"
-      >
-        {triggerLabel}
-      </Button>
+    <div className="max-w-lg mx-auto p-2">
 
-      <Modal isOpen={open} onOpenChange={handleClose}>
-        <Modal.Backdrop>
-          <Modal.Container className="max-w-2xl w-full mx-auto">
-            <Modal.Dialog className="rounded-2xl shadow-2xl bg-white">
-              <Modal.CloseTrigger />
+      {/* Page header */}
+      <div className="mb-2">
+        <h1 className="text-md dark:text-white font-bold text-slate-800">
+          {isEditMode ? "Edit Profile" : "Create Profile"}
+        </h1>
+      </div>
 
-              <Modal.Header>
-                <Modal.Heading className="text-xl font-bold text-slate-800">
-                  {step === "editor" ? "✂️ Crop & Edit Profile Photo" : "Create MLM Profile"}
-                </Modal.Heading>
-              </Modal.Header>
+      <div className="flex flex-col gap-6">
 
-              <Modal.Body className="max-h-[75vh] overflow-y-auto px-6 py-4">
+        {/* ── LOGO ──────────────────────────────────────────── */}
+        <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-4">
+          <label className="block dark:text-black text-sm font-semibold text-slate-700 mb-3">
+            Company Logo
+          </label>
+          <div className="flex flex-col gap-2 items-center">
+            {form.logoSelectedLinks.length > 0 && (
+              <div className="flex gap-2 flex-wrap justify-center">
+                {form.logoSelectedLinks.map((link, i) => (
+                  <img key={i} src={link} alt="Logo" className="w-14 h-14 rounded-full object-contain border-2 border bg-slate-100" />
+                ))}
+              </div>
+            )}
+            <MultiImagePicker
+              companyImages={logos}
+              selectedLinks={form.logoSelectedLinks}
+              onToggleLink={handleLogoToggleLink}
+              customFiles={form.logoCustomFiles}
+              onAddCustomFiles={handleLogoAddCustomFiles}
+              onRemoveCustomFile={handleLogoRemoveCustomFile}
+              inputRef={logoInputRef}
+              companyGridCols={4}
+              thumbHeight="h-14"
+            />
+          </div>
+        </div>
 
-                {/* ══ PROFILE PHOTO EDITOR (step) ══════════ */}
-                {step === "editor" && editorSrc && (
-                  <div className="flex flex-col items-center gap-3 py-2">
-                    <p className="text-sm text-slate-500 text-center">
-                      ✅ Background removed. Crop, rotate, flip & filter your photo.
-                    </p>
-                    <ImageEditorCanvas
-                      src={editorSrc}
-                      onDone={handleEditorDone}
-                      onCancel={() => { setStep("form"); setEditorSrc(null); }}
-                    />
+        {/* ── FULL NAME + MOBILE + DESIGNATION ─────────────── */}
+        <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-4">
+
+          {/* Full Name */}
+          <label className="block text-sm font-semibold text-slate-700 mb-2">
+            Full Name <span className="text-red-500">*</span>
+          </label>
+          <div className="flex gap-2 mb-3">
+            <select
+              value={form.salutation}
+              onChange={(e) => setField("salutation", e.target.value)}
+              className="border dark:text-black border-slate-300 rounded-lg px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-indigo-400"
+            >
+              {["Mr", "Mrs", "Ms", "Dr"].map((s) => <option key={s} value={s}>{s}</option>)}
+            </select>
+            <input
+              type="text"
+              placeholder="Enter name"
+              value={form.name}
+              onChange={(e) => { setField("name", e.target.value); clearError("name"); }}
+              className={`flex-1 dark:text-black border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400 ${errors.name ? "border-red-400 bg-red-50" : "border-slate-300"}`}
+            />
+          </div>
+          {errors.name && <p className="text-xs text-red-500 mt-1 mb-2">{errors.name}</p>}
+
+          {/* Mobile */}
+          <label className="block text-sm font-semibold text-slate-700 mb-2">
+            Mobile Number
+            <span className="ml-2 text-xs font-normal text-slate-400 bg-slate-100 px-2 py-0.5 rounded-full">🔒 Locked</span>
+          </label>
+          <div className="relative mb-3">
+            <input
+              type="tel"
+              value={userMobile}
+              readOnly
+              className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm bg-slate-50 text-slate-500 cursor-not-allowed"
+            />
+            <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-slate-400">from account</span>
+          </div>
+
+          {/* Designation */}
+          <label className="block text-sm font-semibold text-slate-700 mb-2">
+            Designation <span className="text-red-500">*</span>
+          </label>
+          <select
+            value={form.designation}
+            onChange={(e) => { setField("designation", e.target.value); clearError("designation"); }}
+            className={`w-full border dark:text-black rounded-lg px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-indigo-400 ${errors.designation ? "border-red-400 bg-red-50" : "border-slate-300"}`}
+          >
+            <option value="">Select designation…</option>
+            {designations.length > 0
+              ? designations.map((d) => <option key={d.id} value={d.profilename}>{d.profilename}</option>)
+              : <option disabled>No designations in company data</option>}
+          </select>
+          {errors.designation && <p className="text-xs text-red-500 mt-1">{errors.designation}</p>}
+
+        </div>
+
+        {/* ── PROFILE PHOTO ─────────────────────────────────── */}
+        <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-4">
+          <label className="block text-sm font-semibold text-slate-700 mb-3">
+            Profile Photo
+          </label>
+          <div className="flex flex-col items-center gap-3">
+            <div className="flex flex-wrap items-start gap-3 w-full">
+              {allProfileImages.length > 0 ? (
+                allProfileImages.map(({ url, isExisting }, idx) => (
+                  <div key={idx} className="flex flex-col items-center gap-1">
+                    <div className="relative">
+                      <img
+                        src={url}
+                        alt={`Profile ${idx + 1}`}
+                        className="w-20 h-20 rounded-xl object-cover border-2 border bg-slate-100"
+                      />
+                      {isExisting && (
+                        <span className="absolute -top-1 -right-1 bg-green-500 text-white text-[9px] px-1.5 py-0.5 rounded-full leading-tight">
+                          saved
+                        </span>
+                      )}
+                    </div>
+                    <div className="flex gap-1">
+                      <button
+                        type="button"
+                        onClick={(e) => { e.stopPropagation(); handleRemoveProfileImage(idx); }}
+                        className="px-2 py-1 text-xs rounded-lg bg-red-50 border border-red-200 text-red-600 hover:bg-red-100 transition"
+                      >
+                        ✕
+                      </button>
+                    </div>
                   </div>
-                )}
-
-                {/* ══ MAIN FORM ════════════════════════════ */}
-                {step === "form" && (
-                  <div className="flex flex-col gap-6">
-
-                    {/* ── 0 ▸ LOGO ─────────────────────────
-                        No editor. Select from company OR upload file.
-                        ──────────────────────────────────── */}
-                    <div>
-                      <label className="block text-sm font-semibold text-slate-700 mb-1.5">
-                        Company Logo
-                      </label>
-                      <div className="flex gap-3 mb-3">
-                        {["company", "custom"].map((t) => (
-                          <button key={t} type="button"
-                            onClick={() => setField("logoType", t)}
-                            className={`px-4 py-1.5 rounded-full text-sm font-medium border transition ${
-                              form.logoType === t
-                                ? "bg-indigo-600 text-white border-indigo-600"
-                                : "bg-white border-slate-300 text-slate-600 hover:border-indigo-400"}`}>
-                            {t === "company" ? "Select from company" : "Upload manually"}
-                          </button>
-                        ))}
-                      </div>
-
-                      {/* Company logos grid */}
-                      {form.logoType === "company" && (
-                        <div className="grid grid-cols-4 gap-3">
-                          {logos.length === 0 ? (
-                            <p className="text-xs text-slate-400 col-span-4">No logos found in company data.</p>
-                          ) : logos.map((l, i) => (
-                            <button key={i} type="button"
-                              onClick={() => setField("logoSelected", l.link)}
-                              className={`border-2 rounded-xl p-1.5 transition overflow-hidden bg-slate-50 ${
-                                form.logoSelected === l.link
-                                  ? "border-indigo-500 shadow-md"
-                                  : "border-slate-200 hover:border-indigo-300"}`}>
-                              {l.link
-                                ? <img src={l.link} alt={`logo ${i + 1}`} className="w-full h-14 object-contain rounded-lg" />
-                                : <div className="w-full h-14 bg-slate-100 rounded-lg flex items-center justify-center text-slate-400 text-xs">No image</div>}
-                            </button>
-                          ))}
-                        </div>
-                      )}
-
-                      {/* Custom logo upload — simple, no editor */}
-                      {form.logoType === "custom" && (
-                        <SimpleImagePicker
-                          previewURL={form.logoCustomURL}
-                          onFileSelect={handleLogoFileSelect}
-                          inputRef={logoInputRef}
-                          buttonLabel="📁 Upload logo"
-                          previewClass="h-14 max-w-[120px] rounded-xl object-contain border border-slate-200 bg-slate-50 p-1"
-                        />
-                      )}
-                    </div>
-
-                    {/* ── 1 ▸ FULL NAME ───────────────────── */}
-                    <div>
-                      <label className="block text-sm font-semibold text-slate-700 mb-1.5">
-                        Full Name <span className="text-red-500">*</span>
-                      </label>
-                      <div className="flex gap-2">
-                        <select value={form.salutation}
-                          onChange={(e) => setField("salutation", e.target.value)}
-                          className="border border-slate-300 rounded-lg px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-indigo-400">
-                          {["Mr", "Mrs", "Ms", "Dr"].map((s) => <option key={s} value={s}>{s}</option>)}
-                        </select>
-                        <input type="text" placeholder="Enter name" value={form.name}
-                          onChange={(e) => setField("name", e.target.value)}
-                          className={`flex-1 border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400 ${
-                            errors.name ? "border-red-400 bg-red-50" : "border-slate-300"}`} />
-                      </div>
-                      {form.name && (
-                        <p className="text-xs text-indigo-500 mt-1">
-                          Preview: <strong>{form.salutation}.{form.name}</strong>
-                        </p>
-                      )}
-                      {errors.name && <p className="text-xs text-red-500 mt-1">{errors.name}</p>}
-                    </div>
-
-                    {/* ── 2 ▸ MOBILE ──────────────────────── */}
-                    <div>
-                      <label className="block text-sm font-semibold text-slate-700 mb-1.5">
-                        Mobile Number <span className="text-red-500">*</span>
-                      </label>
-                      <input type="tel" placeholder="+91 98765 43210" value={form.mobile}
-                        onChange={(e) => setField("mobile", e.target.value)}
-                        className={`w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400 ${
-                          errors.mobile ? "border-red-400 bg-red-50" : "border-slate-300"}`} />
-                      {errors.mobile && <p className="text-xs text-red-500 mt-1">{errors.mobile}</p>}
-                    </div>
-
-                    {/* ── 3 ▸ DESIGNATION ─────────────────── */}
-                    <div>
-                      <label className="block text-sm font-semibold text-slate-700 mb-1.5">
-                        Designation <span className="text-red-500">*</span>
-                      </label>
-                      <select value={form.designation}
-                        onChange={(e) => setField("designation", e.target.value)}
-                        className={`w-full border rounded-lg px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-indigo-400 ${
-                          errors.designation ? "border-red-400 bg-red-50" : "border-slate-300"}`}>
-                        <option value="">Select designation…</option>
-                        {designations.length > 0
-                          ? designations.map((d, i) => <option key={i} value={d}>{d}</option>)
-                          : <option disabled>No designations in company data</option>}
-                      </select>
-                      {errors.designation && <p className="text-xs text-red-500 mt-1">{errors.designation}</p>}
-                    </div>
-
-                    {/* ── 4 ▸ PROFILE PHOTO (remove bg + editor) */}
-                    <div>
-                      <label className="block text-sm font-semibold text-slate-700 mb-1.5">
-                        Profile Photo
-                      </label>
-                      <div className="flex items-center gap-4">
-                        {form.profileImageURL ? (
-                          <img src={form.profileImageURL} alt="Profile"
-                            className="w-20 h-20 rounded-full object-cover border-2 border-indigo-300 bg-slate-100" />
-                        ) : (
-                          <div className="w-20 h-20 rounded-full border-2 border-dashed border-slate-300 bg-slate-50 flex items-center justify-center text-slate-400 text-xs text-center leading-tight px-2">
-                            No photo
-                          </div>
-                        )}
-                        <div className="flex flex-col gap-2">
-                          <button type="button"
-                            onClick={() => profileInputRef.current?.click()}
-                            disabled={removingBg}
-                            className="px-4 py-2 text-sm rounded-lg bg-indigo-50 border border-indigo-300 text-indigo-700 hover:bg-indigo-100 transition disabled:opacity-50 flex items-center gap-2">
-                            {removingBg ? (
-                              <>
-                                <svg className="animate-spin w-4 h-4" fill="none" viewBox="0 0 24 24">
-                                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z" />
-                                </svg>
-                                Removing BG…
-                              </>
-                            ) : "📷 Upload & Remove BG"}
-                          </button>
-                          {form.profileImageURL && (
-                            <>
-                              <button type="button"
-                                onClick={() => { setEditorSrc(form.profileImageURL); setStep("editor"); }}
-                                className="px-4 py-2 text-sm rounded-lg bg-slate-50 border border-slate-300 text-slate-700 hover:bg-slate-100 transition">
-                                ✏️ Edit / Re-crop
-                              </button>
-                              <button type="button"
-                                onClick={() => setForm((f) => ({ ...f, profileImageBlob: null, profileImageURL: null }))}
-                                className="px-4 py-2 text-sm rounded-lg bg-red-50 border border-red-200 text-red-600 hover:bg-red-100 transition">
-                                ✕ Remove
-                              </button>
-                            </>
-                          )}
-                        </div>
-                      </div>
-                      <input ref={profileInputRef} type="file" accept="image/*"
-                        onChange={handleProfileFileSelect} className="hidden" />
-                      <p className="text-xs text-slate-400 mt-1.5">
-                        BG removed automatically → then crop, rotate &amp; apply filters.
-                      </p>
-                    </div>
-
-                    {/* ── 5 ▸ TOPUP LINE (select or upload, no editor) */}
-                    <div>
-                      <label className="block text-sm font-semibold text-slate-700 mb-1.5">
-                        Topup Line Image
-                      </label>
-                      <div className="flex gap-3 mb-3">
-                        {["company", "custom"].map((t) => (
-                          <button key={t} type="button"
-                            onClick={() => setField("topuplineType", t)}
-                            className={`px-4 py-1.5 rounded-full text-sm font-medium border transition ${
-                              form.topuplineType === t
-                                ? "bg-indigo-600 text-white border-indigo-600"
-                                : "bg-white border-slate-300 text-slate-600 hover:border-indigo-400"}`}>
-                            {t === "company" ? "Select from company" : "Upload manually"}
-                          </button>
-                        ))}
-                      </div>
-
-                      {/* Company topuplines grid */}
-                      {form.topuplineType === "company" && (
-                        <div className="grid grid-cols-3 gap-3">
-                          {topuplines.length === 0 ? (
-                            <p className="text-xs text-slate-400 col-span-3">No topup lines in company data.</p>
-                          ) : topuplines.map((t, i) => (
-                            <button key={i} type="button"
-                              onClick={() => setField("topuplineSelected", t.link)}
-                              className={`border-2 rounded-xl p-1 transition overflow-hidden ${
-                                form.topuplineSelected === t.link
-                                  ? "border-indigo-500 shadow-md"
-                                  : "border-slate-200 hover:border-indigo-300"}`}>
-                              {t.link
-                                ? <img src={t.link} alt="" className="w-full h-16 object-cover rounded-lg" />
-                                : <div className="w-full h-16 bg-slate-100 rounded-lg flex items-center justify-center text-slate-400 text-xs">No image</div>}
-                            </button>
-                          ))}
-                        </div>
-                      )}
-
-                      {/* Custom topupline upload — simple, no editor */}
-                      {form.topuplineType === "custom" && (
-                        <SimpleImagePicker
-                          previewURL={form.topuplineCustomURL}
-                          onFileSelect={handleTopupFileSelect}
-                          inputRef={topupInputRef}
-                          buttonLabel="📁 Upload topup image"
-                          previewClass="h-16 rounded-lg object-cover border border-slate-200"
-                        />
-                      )}
-                    </div>
-
-                    {/* ── 6 ▸ SOCIAL MEDIA ────────────────── */}
-                    <div>
-                      <label className="block text-sm font-semibold text-slate-700 mb-3">
-                        Social Media Links{" "}
-                        <span className="text-slate-400 font-normal">(Optional)</span>
-                      </label>
-                      <div className="flex flex-col gap-3">
-                        {SOCIAL_PLATFORMS.map((platform) => (
-                          <div key={platform} className="flex items-center gap-3">
-                            <div className="w-10 h-10 rounded-xl bg-slate-50 border border-slate-200 flex items-center justify-center shrink-0">
-                              <SocialIcon name={platform} active={false} />
-                            </div>
-                            <input type="text"
-                              placeholder={`${platform} user ID`}
-                              maxLength={60}
-                              value={form.socials[platform]}
-                              onChange={(e) => setForm((f) => ({ ...f, socials: { ...f.socials, [platform]: e.target.value } }))}
-                              className="flex-1 border border-slate-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400" />
-                          </div>
-                        ))}
-                      </div>
-                      {/* Same-ID shortcut */}
-                      <div className="mt-4 p-4 bg-indigo-50 rounded-xl border border-indigo-100">
-                        <p className="text-sm font-medium text-slate-700 mb-2">Same ID across platforms? Fill once:</p>
-                        <input type="text" placeholder="Shared user ID" maxLength={40}
-                          value={form.socialSameId}
-                          onChange={(e) => handleSocialSameIdChange(e.target.value)}
-                          className="w-full border border-indigo-200 rounded-lg px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-indigo-400 mb-3" />
-                        <p className="text-xs text-slate-500 mb-2">Select platforms that share this ID:</p>
-                        <div className="flex gap-3 flex-wrap">
-                          {SOCIAL_PLATFORMS.map((platform) => (
-                            <button key={platform} type="button"
-                              onClick={() => handleSocialSameToggle(platform)}
-                              className={`flex items-center justify-center w-12 h-12 rounded-full border-2 transition ${
-                                form.socialSameSelected.includes(platform)
-                                  ? "border-indigo-500 bg-indigo-500"
-                                  : "border-slate-300 bg-white hover:border-indigo-400"}`}>
-                              <SocialIcon name={platform} active={form.socialSameSelected.includes(platform)} />
-                            </button>
-                          ))}
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* Banners */}
-                    {saveError && (
-                      <div className="bg-red-50 border border-red-200 rounded-xl p-3 text-sm text-red-700">
-                        ⚠️ {saveError}
-                      </div>
-                    )}
-                    {saveSuccess && (
-                      <div className="bg-green-50 border border-green-200 rounded-xl p-3 text-sm text-green-700">
-                        ✅ Profile saved successfully!
-                      </div>
-                    )}
-                  </div>
-                )}
-              </Modal.Body>
-
-              {step === "form" && (
-                <Modal.Footer className="px-6 py-4 border-t border-slate-100 flex justify-end gap-3">
-                  <button type="button" onClick={handleClose}
-                    className="px-5 py-2.5 rounded-xl border border-slate-300 text-sm font-medium text-slate-700 hover:bg-slate-50 transition">
-                    Cancel
-                  </button>
-                  <button type="button" onClick={handleSave} disabled={saving}
-                    className="px-6 py-2.5 rounded-xl bg-indigo-600 text-white text-sm font-semibold hover:bg-indigo-700 transition disabled:opacity-60 flex items-center gap-2 shadow-md">
-                    {saving ? (
-                      <>
-                        <svg className="animate-spin w-4 h-4" fill="none" viewBox="0 0 24 24">
-                          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z" />
-                        </svg>
-                        Saving…
-                      </>
-                    ) : "💾 Save Profile"}
-                  </button>
-                </Modal.Footer>
+                ))
+              ) : (
+                <div className="w-20 h-20 rounded-full border-2 border-dashed border-slate-300 bg-slate-50 flex items-center justify-center text-slate-400 text-xs text-center px-2">
+                  No photo
+                </div>
               )}
-            </Modal.Dialog>
-          </Modal.Container>
-        </Modal.Backdrop>
-      </Modal>
-    </>
+            </div>
+            <div
+              onClick={() => !removingBg && profileInputRef.current?.click()}
+              className={`text-sm w-full flex justify-center items-center gap-2 p-2.5 rounded-lg bg-slate-100 border text-gray-600 hover:bg-indigo-50 transition ${removingBg ? "opacity-50 cursor-not-allowed" : "cursor-pointer"}`}
+            >
+              {removingBg ? (
+                <>
+                  <svg className="animate-spin w-4 h-4 text-accent" fill="none" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z" />
+                  </svg>
+                  Removing BG…
+                </>
+              ) : (
+                <>
+                  <svg viewBox="0 0 20 20" fill="currentColor" className="w-4 h-4 text-accent">
+                    <path d="M4 5a2 2 0 012-2h2l1-1h2l1 1h2a2 2 0 012 2v9a2 2 0 01-2 2H6a2 2 0 01-2-2V5zm6 3a3 3 0 100 6 3 3 0 000-6z" />
+                  </svg>
+                  Upload Profile Image
+                </>
+              )}
+            </div>
+            <input ref={profileInputRef} type="file" accept="image/*" multiple onChange={handleProfileFileSelect} className="hidden" />
+          </div>
+        </div>
+
+        {/* ── TOPUP LINE ────────────────────────────────────── */}
+        <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-4">
+          <label className="block text-sm font-semibold text-slate-700 mb-3">
+            Topup Line Images
+          </label>
+          <div className="flex flex-col gap-2 items-center">
+            {form.topupSelectedLinks.length > 0 && (
+              <div className="flex gap-2 flex-wrap justify-center">
+                {form.topupSelectedLinks.map((link, i) => (
+                  <img key={i} src={link} alt="Topup" className="w-14 h-14 rounded-full object-contain border-2 border bg-slate-100" />
+                ))}
+              </div>
+            )}
+            <MultiImagePicker
+              companyImages={topuplines}
+              selectedLinks={form.topupSelectedLinks}
+              onToggleLink={handleTopupToggleLink}
+              customFiles={form.topupCustomFiles}
+              onAddCustomFiles={handleTopupAddCustomFiles}
+              onRemoveCustomFile={handleTopupRemoveCustomFile}
+              inputRef={topupInputRef}
+              companyGridCols={3}
+              thumbHeight="h-16"
+            />
+          </div>
+        </div>
+
+        {/* ── SOCIAL MEDIA ──────────────────────────────────── */}
+        <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-4">
+          <label className="block text-sm font-semibold text-slate-700 mb-3">
+            Social Media Links{" "}
+            <span className="text-slate-400 font-normal">(Optional)</span>
+          </label>
+          <div className="flex flex-col gap-3">
+            {SOCIAL_PLATFORMS.map((platform) => (
+              <div key={platform} className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl bg-slate-50 border border-slate-200 flex items-center justify-center shrink-0">
+                  <SocialIcon name={platform} active={false} />
+                </div>
+                <input
+                  type="text"
+                  placeholder={`${platform} user ID`}
+                  maxLength={60}
+                  value={form.socials[platform]}
+                  onChange={(e) => setForm((f) => ({ ...f, socials: { ...f.socials, [platform]: e.target.value } }))}
+                  className="flex-1 dark:text-black border border-slate-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400"
+                />
+              </div>
+            ))}
+          </div>
+          <div className="mt-4 p-4 bg-indigo-50 rounded-xl border border-indigo-100">
+            <p className="text-sm font-medium text-slate-700 mb-2">Same ID across platforms?</p>
+            <input
+              type="text"
+              placeholder="Shared user ID"
+              maxLength={40}
+              value={form.socialSameId}
+              onChange={(e) => handleSocialSameIdChange(e.target.value)}
+              className="w-full border dark:text-black border-indigo-200 rounded-lg px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-indigo-400 mb-3"
+            />
+            <p className="text-xs text-slate-500 mb-2">Select platforms to apply:</p>
+            <div className="flex gap-3 flex-wrap">
+              {SOCIAL_PLATFORMS.map((platform) => (
+                <button
+                  key={platform}
+                  type="button"
+                  onClick={() => handleSocialSameToggle(platform)}
+                  className={`flex items-center justify-center w-12 h-12 rounded-full border-2 transition ${form.socialSameSelected.includes(platform)
+                      ? "border-indigo-500 bg-indigo-500"
+                      : "border-slate-300 bg-white hover:border-indigo-400"
+                    }`}
+                >
+                  <SocialIcon name={platform} active={form.socialSameSelected.includes(platform)} />
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
+
+        {/* ── ERROR FEEDBACK ────────────────────────────────── */}
+        {saveError && (
+          <div className="bg-red-50 border border-red-200 rounded-xl p-3 text-sm text-red-700">
+            ⚠️ {saveError}
+          </div>
+        )}
+
+        {/* ── SAVE BUTTON ───────────────────────────────────── */}
+        <button
+          type="button"
+          onClick={handleSave}
+          disabled={saving}
+          className="w-full py-3 rounded-xl bg-accent text-white text-sm font-semibold hover:bg-indigo-700 transition disabled:opacity-60 flex items-center justify-center gap-2 shadow-md"
+        >
+          {saving ? (
+            <>
+              <svg className="animate-spin w-4 h-4" fill="none" viewBox="0 0 24 24">
+                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z" />
+              </svg>
+              {isEditMode ? "Updating…" : "Saving…"}
+            </>
+          ) : isEditMode ? " Update Profile" : " Save Profile"}
+        </button>
+
+        {/* bottom spacing for mobile nav bars */}
+        <div className="h-6" />
+      </div>
+    </div>
   );
 }

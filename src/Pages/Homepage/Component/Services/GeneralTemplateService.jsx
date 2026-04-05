@@ -46,7 +46,7 @@ export const fetchGeneralTemplates = async (groupIndex) => {
       );
 
       const snapshot = await getDocs(q);
-
+      
       const templates = snapshot.docs.map((doc) => ({
         id: doc.id,
         image: doc.data().Showcase_url,

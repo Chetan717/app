@@ -45,7 +45,7 @@ export default function Layout({ children }) {
         setActive={setActive}
       />
 
-      <div className="flex flex-col  overflow-y-auto flex-1 min-w-0 overflow-hidden">
+      <div className="flex flex-col h-full overflow-y-auto flex-1 min-w-0 overflow-hidden">
         <Header
           collapsed={collapsed}
           setCollapsed={setCollapsed}
@@ -54,7 +54,7 @@ export default function Layout({ children }) {
           setDarkMode={setDarkMode}
           activeLabel={PAGE_LABELS[active] ?? "Dashboard"}
         />
-        <div  className="flex-1 h-full overflow-y-auto h-full  layout-scroll-container">
+        <div  className="flex-1 h-full overflow-y-auto layout-scroll-container">
           {children}
         </div>
       </div>

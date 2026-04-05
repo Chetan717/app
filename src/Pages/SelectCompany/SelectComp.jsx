@@ -22,7 +22,7 @@ export default function SelectComp() {
       name: data?.name || "",
       address: data?.address || "",
       owner: data?.owner || "",
-      designation: data?.designation || "",
+      designation: data?.profile || [],
       logos: data?.logos || [],
       topuplines: data?.topuplines || [],
       Plans: data?.Plans || [],
@@ -44,6 +44,7 @@ export default function SelectComp() {
           const data = snapshot.docs.map((doc) =>
             normalizeCompany(doc)
           );
+          
           setCompanies(data);
         }
       } catch (error) {

@@ -14,6 +14,7 @@ import { useNavigate } from "react-router";
 import { collection, getDocs, query, where } from "firebase/firestore";
 import { db } from "../../firebase";
 import { toast } from "@heroui/react";
+
 export function Login() {
   const navigate = useNavigate();
 
@@ -35,7 +36,6 @@ export function Login() {
       setFormError("Please enter a valid 10-digit mobile number");
       return;
     }
-
     if (!/^[0-9]{4}$/.test(pin)) {
       setFormError("Please enter a valid 4-digit PIN");
       return;
@@ -48,7 +48,7 @@ export function Login() {
       // ── Find user by mobile ─────────────────────────────────
       const q = query(
         collection(db, "users"),
-        where("mobileNo", "==", data.mobile),
+        where("mobileNo", "==", data.mobile)
       );
       const snapshot = await getDocs(q);
 
@@ -60,7 +60,7 @@ export function Login() {
       const userDoc = snapshot.docs[0];
       const userData = userDoc.data();
 
-      // ── Check if verified ───────────────────────────────────
+      // ── Check verified ──────────────────────────────────────
       if (!userData.isverified) {
         setFormError("Account not verified. Please signup again.");
         return;
@@ -72,21 +72,39 @@ export function Login() {
         return;
       }
 
-      // ── Save to localStorage ────────────────────────────────
+      // ── Save full user to localStorage (incl. refer fields) ─
       const userToStore = {
         id: userDoc.id,
         name: userData.name,
         mobileNo: userData.mobileNo,
         isverified: userData.isverified,
         createdAt: userData.createdAt?.toDate?.()?.toISOString() ?? "",
+        referCode: userData.referCode ?? "",        // ✅ their refer code
+        referredBy: userData.referredBy ?? null,    // ✅ who referred them
+        referCredit: userData.referCredit ?? 0,     // ✅ earned credits
       };
 
       localStorage.setItem("usermlm", JSON.stringify(userToStore));
-      toast.success("User Login Successfully!");
 
-      // ── Navigate to home ────────────────────────────────────
-      navigate("/");
-      s;
+      // ── Check for existing MLM Profile ──────────────────────
+      const profileQuery = query(
+        collection(db, "mlmprofiles"),
+        where("mobile", "==", data.mobile)
+      );
+      const profileSnapshot = await getDocs(profileQuery);
+
+      if (!profileSnapshot.empty) {
+        const profileDoc = profileSnapshot.docs[0];
+        localStorage.setItem(
+          "mlmProfile",
+          JSON.stringify({ id: profileDoc.id, ...profileDoc.data() })
+        );
+        toast.success("Login Successful!");
+        navigate("/");             // Profile found → home
+      } else {
+        toast.success("Login Successful!");
+        navigate("/selectcomp");   // No profile → select company
+      }
     } catch (error) {
       console.error("Login Error:", error);
       setFormError("Something went wrong. Try again.");
@@ -97,7 +115,6 @@ export function Login() {
 
   return (
     <div className="flex flex-col gap-10 justify-center items-center h-screen">
-      <div className="flex flex-wrap gap-2"></div>
       <img src={logo} className="w-[120px] h-[120px]" />
 
       <Form className="flex w-[290px] flex-col gap-4" onSubmit={onSubmit}>
@@ -138,7 +155,11 @@ export function Login() {
         )}
 
         {/* Submit */}
-        <Button className="w-[290px] size-12" type="submit" isLoading={loading}>
+        <Button
+          className="w-[290px] size-12"
+          type="submit"
+          isLoading={loading}
+        >
           {loading ? "Logging in..." : "Login Now"}
         </Button>
 
