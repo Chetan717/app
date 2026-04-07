@@ -1,171 +1,116 @@
-import React, { useState, useEffect } from 'react'
-import { Stage, Layer, Text, Circle, Image, Rect } from 'react-konva'
-import useImage from 'use-image'
-import ListOfTemplates from './components/ListOfTemplates'
-
-const STAGE_WIDTH = 320
-const STAGE_HEIGHT = 320
-const HEADER_FOOTER_HEIGHT = 50
-const EXPORT_PIXEL_RATIO = 6
+import React, { useState, useEffect, useRef, useMemo } from "react";
+import { db } from "../../../Firebase";
+import { collection, getDocs } from "firebase/firestore";
+import MlmEditPage from "./MlmEditPage";
+import GeneralEditPage from "./GenralEditPage";
 
 export const GENERAL_SELECT_TYPES = [
-    { name: "Trending", value: "Trending" },
-    { name: "Festival", value: "Festival" },
-    { name: "Motivational", value: "Motivational" },
-    { name: "Good Morning", value: "Good_Morning" },
-    { name: "Devotional / Spiritual", value: "Devotional_Spiritual" },
-    { name: "Leader Quotes", value: "Leader_Quotes" },
-    { name: "Health Tips", value: "Health_Tips" },
-    // { name: "Bonanza", value: "Bonanza" },
-    // { name: "Achievements", value: "Achievements" },
-    // { name: "Achievements B", value: "Achievements_B" },
-    // { name: "Income", value: "Income" },
-    // { name: "Welcome / Closing", value: "Welcome_Closing" },
-    // { name: "Meeting", value: "Meeting" },
-    { name: "Anniversary & Birthday", value: "Anniversary_Birthday" },
-    { name: "Greeting & Wishes", value: "Greeting_Wishes" },
-    { name: "Thank You (Birthday & Anniversary)", value: "ThankYou_Birthday_Anniversary" },
-    // { name: "Capping", value: "Capping" },
+  { name: "Trending", value: "Trending" },
+  { name: "Festival", value: "Festival" },
+  { name: "Motivational", value: "Motivational" },
+  { name: "Good Morning", value: "Good_Morning" },
+  { name: "Devotional / Spiritual", value: "Devotional_Spiritual" },
+  { name: "Leader Quotes", value: "Leader_Quotes" },
+  { name: "Health Tips", value: "Health_Tips" },
+  { name: "Anniversary & Birthday", value: "Anniversary_Birthday" },
+  { name: "Greeting & Wishes", value: "Greeting_Wishes" },
+  {
+    name: "Thank You (Birthday & Anniversary)",
+    value: "ThankYou_Birthday_Anniversary",
+  },
 ];
 
-function MainEditor() {
-    const stageRef = React.useRef(null);
-    const TemplatePosition = true;
+// ── Module-level cache — persists across re-mounts ─────────────────
+const collectionCache = {
+  data: null,
+  isFetched: false,
+};
 
-    const [mlmForm, setMlmForm] = useState(null);
-    const [mlmProfile, setMlmProfile] = useState(null);
-    const [selected, setSelected] = useState(null);
-
-    function getSelType() {
-        try {
-            return JSON.parse(localStorage.getItem("selType")) || {};
-        } catch {
-            return {};
-        }
-    }
-
-    useEffect(() => {
-        const formData = localStorage.getItem('mlmform');
-        const profileData = localStorage.getItem('mlmProfile');
-        if (formData) setMlmForm(JSON.parse(formData));
-        if (profileData) setMlmProfile(JSON.parse(profileData));
-
-    }, []);
-    const selll = getSelType()
-    const achiever = mlmForm?.achiever || {};
-    const tab = mlmForm?.tab || 'team';
-    const topuplineURLs = mlmProfile?.topuplineURLs || [];
-    const profileName = mlmForm?.promoter?.name ? mlmForm?.promoter?.name : mlmProfile?.name || '';
-    const profileMobile = mlmForm?.promoter?.name ? mlmForm?.promoter?.mobile : mlmProfile?.mobile || '';
-    const designation = mlmForm?.promoter?.name ? mlmForm?.promoter?.role : mlmProfile?.designation;
-
-    // ── Hide achiever name/city for general template types ────────────
-    const isGeneralType = GENERAL_SELECT_TYPES.some(t => t.value === selll?.type);
-
-    const [bgImage] = useImage(`${selected?.url || ""}`, 'anonymous');
-    const [Imagefooter] = useImage(
-        'https://firebasestorage.googleapis.com/v0/b/mlmbooster.firebasestorage.app/o/graphics%2Flinks%2F1775306097021_qqhdl6.webp?alt=media&token=54d461df-8c6a-459d-be1d-505e7471ba50',
-        'anonymous'
-    );
-    const [Imaget1] = useImage(
-        'https://firebasestorage.googleapis.com/v0/b/mlmbooster.firebasestorage.app/o/graphics%2Flinks%2F1775306087385_281aww.webp?alt=media&token=9fd57ab6-07f3-4a1a-a4df-8c35a9224c46',
-        'anonymous'
-    );
-
-    const [Imagel2] = useImage(mlmProfile?.logoURLs?.[0] || '', 'anonymous');
-    const [Imagel3] = useImage(mlmProfile?.logoURLs?.[1] || '', 'anonymous');
-    const [Imagel4] = useImage(mlmProfile?.logoURLs?.[2] || '', 'anonymous');
-
-    const [Imagetop1] = useImage(topuplineURLs?.[0] || '', 'anonymous');
-    const [Imagetop2] = useImage(topuplineURLs?.[1] || '', 'anonymous');
-    const [Imagetop3] = useImage(topuplineURLs?.[2] || '', 'anonymous');
-    const [Imagetop4] = useImage(topuplineURLs?.[3] || '', 'anonymous');
-
-    const [ImageProfile] = useImage(
-        mlmForm?.promoter?.name ? `${mlmForm?.promoter?.image}` : `${mlmProfile?.profileImageURLs[0]}`,
-        'anonymous'
-    );
-
-    const downloadURI = (uri, name) => {
-        const link = document.createElement('a');
-        link.download = name;
-        link.href = uri;
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-    };
-
-    const handleExport = () => {
-        const uri = stageRef.current.toDataURL({
-            pixelRatio: EXPORT_PIXEL_RATIO,
-            mimeType: 'image/png',
-            quality: 1,
-        });
-        downloadURI(uri, 'stage-hd.png');
-    };
-
-    return (
-        <div className='flex flex-col justify-start items-center h-screen'>
-            <Stage
-                ref={stageRef}
-                width={STAGE_WIDTH}
-                height={STAGE_HEIGHT}
-                className='bg-slate-100 mt-2 shadow-lg'
-            >
-                <Layer>
-                    <Image image={bgImage} x={0} y={0} width={STAGE_WIDTH} height={STAGE_HEIGHT} />
-
-                    <Image image={Imagel2} x={3} y={2} width={25} height={25} />
-                    <Image image={Imagel3} x={260} y={2} width={25} height={25} />
-                    <Image image={Imagel4} x={290} y={2} width={25} height={25} />
-
-                    <Image image={Imagetop1} x={100} y={2} width={25} height={25} />
-                    <Image image={Imagetop2} x={130} y={2} width={25} height={25} />
-                    <Image image={Imagetop3} x={160} y={2} width={25} height={25} />
-                    <Image image={Imagetop4} x={190} y={2} width={25} height={25} />
-
-                    <Image image={Imagefooter} x={0} y={280} width={350} height={41} />
-
-                    {selected?.position === 'right' ? (
-                        <>
-                            {/* Achiever name/city hidden for general types */}
-                            {!isGeneralType && (
-                                <>
-                                    <Text x={55} y={87} width={150} height={20} text={achiever.name || 'Chaitnya Chaudhari'} fontSize={12} fill="white" fontStyle='bold' verticalAlign="middle" />
-                                    <Text x={99} y={106} width={100} height={20} text={achiever.city || 'Pune'} fontSize={10} fill="white" fontStyle='bold' verticalAlign="middle" />
-                                </>
-                            )}
-
-                            <Text x={43} y={294} width={150} height={5} text="CALL FOR ASSOCIATION" fontSize={7} fill="white" fontStyle='bold' verticalAlign="middle" />
-                            <Text x={39} y={296} width={150} height={20} text={`+91${profileMobile}` || '+91XXXXXXXXXX'} fontSize={12} fill="white" fontStyle='bold' verticalAlign="middle" />
-                            <Text x={160} y={287} width={120} height={20} text={profileName || 'MR.CHETAN'} fontSize={10} fill="white" fontStyle='bold' verticalAlign="middle" />
-                            <Text x={145} y={303} width={110} height={5} text={designation || ''} fontSize={6} fill="white" fontStyle='bold' verticalAlign="middle" />
-                            <Text x={150} y={308} width={110} height={10} text="social" fontSize={8} fill="white" fontStyle='bold' verticalAlign="middle" />
-                            <Image image={ImageProfile} x={231} y={220} width={100} height={100} />
-                        </>
-                    ) : (
-                        <>
-                            {/* Achiever name/city hidden for general types */}
-                            {!isGeneralType && (
-                                <>
-                                    <Text x={180} y={87} width={150} height={20} text={achiever.name || 'Chaitnya Chaudhari'} fontSize={12} fill="white" fontStyle='bold' verticalAlign="middle" />
-                                    <Text x={190} y={106} width={100} height={20} text={achiever.city || 'Pune'} fontSize={10} fill="white" fontStyle='bold' verticalAlign="middle" />
-                                </>
-                            )}
-
-                            <Text x={43} y={294} width={150} height={5} text="CALL FOR ASSOCIATION" fontSize={7} fill="white" fontStyle='bold' verticalAlign="middle" />
-                            <Text x={39} y={296} width={150} height={20} text={`+91${profileMobile}` || '+91XXXXXXXXXX'} fontSize={12} fill="white" fontStyle='bold' verticalAlign="middle" />
-                            <Text x={160} y={287} width={120} height={20} text={profileName || 'MR.CHETAN'} fontSize={10} fill="white" fontStyle='bold' verticalAlign="middle" />
-                            <Text x={145} y={303} width={110} height={5} text={designation || ''} fontSize={6} fill="white" fontStyle='bold' verticalAlign="middle" />
-                            <Text x={150} y={308} width={110} height={10} text="social" fontSize={8} fill="white" fontStyle='bold' verticalAlign="middle" />
-                            <Image image={ImageProfile} x={231} y={220} width={100} height={100} />
-                        </>
-                    )}
-                </Layer>
-            </Stage>
-            <ListOfTemplates selected={selected} setSelected={setSelected} />
-        </div>
-    )
+// ── Pure helper — group active docs by GraphicsType ────────────────
+// Returns: { TopUplineFrames: [...], Footers: [...], ... }
+function groupByGraphicsType(data) {
+  return data.reduce((acc, item) => {
+    if (!item.Active) return acc; // skip inactive
+    const type = item.GraphicsType;
+    if (!acc[type]) acc[type] = [];
+    acc[type].push(item);
+    return acc;
+  }, {});
 }
 
-export default MainEditor
+function MainEditor() {
+  const [collectionData, setCollectionData] = useState(collectionCache.data);
+  const [loading, setLoading] = useState(!collectionCache.isFetched);
+  const [error, setError] = useState(null);
+  const isMounted = useRef(true);
+
+  useEffect(() => {
+    isMounted.current = true;
+
+    if (collectionCache.isFetched) return;
+
+    const fetchMlmGraphics = async () => {
+      try {
+        setLoading(true);
+
+        const snapshot = await getDocs(collection(db, "mlmgraphics"));
+        const data = snapshot.docs.map((doc) => ({
+          id: doc.id,
+          ...doc.data(),
+        }));
+
+        if (isMounted.current) {
+          collectionCache.data = data;
+          collectionCache.isFetched = true;
+          setCollectionData(data);
+        }
+      } catch (err) {
+        if (isMounted.current) setError(err.message);
+      } finally {
+        if (isMounted.current) setLoading(false);
+      }
+    };
+
+    fetchMlmGraphics();
+
+    return () => {
+      isMounted.current = false;
+    };
+  }, []);
+
+  // ── Grouped map — recomputes only when collectionData changes ─────
+  // graphicsMap = { TopUplineFrames: [...], Footers: [...] }
+  const graphicsMap = useMemo(
+    () => (collectionData ? groupByGraphicsType(collectionData) : {}),
+    [collectionData]
+  );
+
+  function getSelType() {
+    try {
+      return JSON.parse(localStorage.getItem("selType")) || {};
+    } catch {
+      return {};
+    }
+  }
+
+  const selll = getSelType();
+
+  const isGeneralType = GENERAL_SELECT_TYPES.some(
+    (t) => t.value === selll?.type
+  );
+
+  if (loading) return <div>Loading...</div>;
+  if (error) return <div>Error: {error}</div>;
+
+  return (
+    <>
+      {isGeneralType ? (
+        <GeneralEditPage graphicsMap={graphicsMap} />
+      ) : (
+        <MlmEditPage graphicsMap={graphicsMap} />
+      )}
+    </>
+  );
+}
+
+export default MainEditor;
