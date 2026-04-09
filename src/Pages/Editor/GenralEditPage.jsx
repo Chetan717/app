@@ -25,6 +25,8 @@ function GeneralEditPage({
   setIsOpenFtr,
   setIsOpen,
   selectedFooterFrame,
+  middaleImage,
+  setmiddaleImage,
 }) {
   const stageRef = useRef(null);
   const profileImageRef = useRef(null);
@@ -76,7 +78,11 @@ function GeneralEditPage({
     const formData = localStorage.getItem("mlmform");
     const profileData = localStorage.getItem("mlmProfile");
     if (formData) setMlmForm(JSON.parse(formData));
-    if (profileData) setMlmProfile(JSON.parse(profileData));
+    if (profileData) {
+      const parsed = JSON.parse(profileData);
+      setMlmProfile(parsed);
+      setmiddaleImage(parsed?.profileImageURLs?.[0] || null); // ✅ first image selected by default
+    }
   }, []);
 
   // Attach / detach transformer + update toolbar position
@@ -132,7 +138,7 @@ function GeneralEditPage({
   const [ImageProfile] = useImage(
     mlmForm?.promoter?.name
       ? `${mlmForm?.promoter?.image}`
-      : `${mlmProfile?.profileImageURLs?.[0]}`,
+      : `${middaleImage || ""}`,
     "anonymous",
   );
 
@@ -274,10 +280,6 @@ function GeneralEditPage({
 
   return (
     <div className="flex flex-col justify-start items-center h-full">
-      <Button onClick={handleExport} className="mb-2">
-        Export
-      </Button>
-
       {/* Wrapper gives a positioning context for the floating toolbar */}
       <div
         ref={stageContainerRef}
@@ -578,7 +580,22 @@ function GeneralEditPage({
           </Layer>
         </Stage>
       </div>
-
+      <div className="flex lg:w-1/3 w-full  flex-row gap-2 justify-between Items-center mt-2 ">
+        <div className="flex flex-row justify-start items-center w-1/2 h-[40px]  ml-3">
+          {mlmProfile?.profileImageURLs?.map((img, index) => (
+            <img
+              key={index}
+              src={img}
+              onClick={() => setmiddaleImage(img)}
+              className={`w-[35px] h-[35px] object-contain cursor-pointer transition-all
+        ${middaleImage === img ? "border-2 border-accent rounded " : ""}`}
+            />
+          ))}
+        </div>
+        <Button size="sm" onClick={handleExport} className=" mr-5">
+          Download
+        </Button>
+      </div>
       <ListOfTemplates selected={selected} setSelected={setSelected} />
     </div>
   );

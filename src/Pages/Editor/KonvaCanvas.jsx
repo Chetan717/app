@@ -197,8 +197,12 @@ function KonvaCanvas({
               fill="white"
               fontStyle="bold"
               verticalAlign="middle"
-              onClick={() => setIsOpenFtr(isSubGeneralType_bonanza ? false :true)}
-              onTap={() => setIsOpenFtr(isSubGeneralType_bonanza ? false :true)}
+              onClick={() =>
+                setIsOpenFtr(isSubGeneralType_bonanza ? false : true)
+              }
+              onTap={() =>
+                setIsOpenFtr(isSubGeneralType_bonanza ? false : true)
+              }
             />
             <Text
               x={205}
@@ -210,8 +214,12 @@ function KonvaCanvas({
               fill="white"
               fontStyle="bold"
               verticalAlign="middle"
-              onClick={() => setIsOpenFtr(isSubGeneralType_bonanza ? false :true)}
-              onTap={() => setIsOpenFtr(isSubGeneralType_bonanza ? false :true)}
+              onClick={() =>
+                setIsOpenFtr(isSubGeneralType_bonanza ? false : true)
+              }
+              onTap={() =>
+                setIsOpenFtr(isSubGeneralType_bonanza ? false : true)
+              }
             />
             <Text
               x={isSubGeneralType ? -10 : 70}
@@ -224,8 +232,12 @@ function KonvaCanvas({
               fontStyle="1000"
               align="center"
               verticalAlign="middle"
-              onClick={() => setIsOpenFtr(isSubGeneralType_bonanza ? false :true)}
-              onTap={() => setIsOpenFtr(isSubGeneralType_bonanza ? false :true)}
+              onClick={() =>
+                setIsOpenFtr(isSubGeneralType_bonanza ? false : true)
+              }
+              onTap={() =>
+                setIsOpenFtr(isSubGeneralType_bonanza ? false : true)
+              }
             />
             <Text
               x={isSubGeneralType ? -10 : 70}
@@ -238,8 +250,12 @@ function KonvaCanvas({
               fontStyle="bold"
               align="center"
               verticalAlign="middle"
-              onClick={() => setIsOpenFtr(isSubGeneralType_bonanza ? false :true)}
-              onTap={() => setIsOpenFtr(isSubGeneralType_bonanza ? false :true)}
+              onClick={() =>
+                setIsOpenFtr(isSubGeneralType_bonanza ? false : true)
+              }
+              onTap={() =>
+                setIsOpenFtr(isSubGeneralType_bonanza ? false : true)
+              }
             />
           </>
         ) : (
@@ -254,8 +270,12 @@ function KonvaCanvas({
               fill="white"
               fontStyle="bold"
               verticalAlign="middle"
-              onClick={() => setIsOpenFtr(isSubGeneralType_bonanza ? false :true)}
-              onTap={() => setIsOpenFtr(isSubGeneralType_bonanza ? false :true)}
+              onClick={() =>
+                setIsOpenFtr(isSubGeneralType_bonanza ? false : true)
+              }
+              onTap={() =>
+                setIsOpenFtr(isSubGeneralType_bonanza ? false : true)
+              }
             />
             <Text
               x={30}
@@ -267,8 +287,12 @@ function KonvaCanvas({
               fill="white"
               fontStyle="bold"
               verticalAlign="middle"
-              onClick={() => setIsOpenFtr(isSubGeneralType_bonanza ? false :true)}
-              onTap={() => setIsOpenFtr(isSubGeneralType_bonanza ? false :true)}
+              onClick={() =>
+                setIsOpenFtr(isSubGeneralType_bonanza ? false : true)
+              }
+              onTap={() =>
+                setIsOpenFtr(isSubGeneralType_bonanza ? false : true)
+              }
             />
             <Text
               x={133}
@@ -281,8 +305,12 @@ function KonvaCanvas({
               fontStyle="1000"
               align="center"
               verticalAlign="middle"
-              onClick={() => setIsOpenFtr(isSubGeneralType_bonanza ? false :true)}
-              onTap={() => setIsOpenFtr(isSubGeneralType_bonanza ? false :true)}
+              onClick={() =>
+                setIsOpenFtr(isSubGeneralType_bonanza ? false : true)
+              }
+              onTap={() =>
+                setIsOpenFtr(isSubGeneralType_bonanza ? false : true)
+              }
             />
             <Text
               x={133}
@@ -295,8 +323,12 @@ function KonvaCanvas({
               fontStyle="bold"
               align="center"
               verticalAlign="middle"
-              onClick={() => setIsOpenFtr(isSubGeneralType_bonanza ? false :true)}
-              onTap={() => setIsOpenFtr(isSubGeneralType_bonanza ? false :true)}
+              onClick={() =>
+                setIsOpenFtr(isSubGeneralType_bonanza ? false : true)
+              }
+              onTap={() =>
+                setIsOpenFtr(isSubGeneralType_bonanza ? false : true)
+              }
             />
           </>
         )}

@@ -229,10 +229,10 @@ export default function ListOfTemplates({ selected, setSelected }) {
 
     // ── Render ────────────────────────────────────────────────────────────────
     return (
-        <div className="w-full h-[400px] overflow-y-auto mx-auto p-3 pb-6 space-y-3">
+        <div className="w-full h-[400px] overflow-y-auto mx-auto p-2 pb-6 ">
 
             {/* Header */}
-            <div className="flex items-center justify-between">
+            {/* <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
                     <span className="text-sm font-semibold text-foreground">Templates</span>
                     {filterType && (
@@ -247,7 +247,7 @@ export default function ListOfTemplates({ selected, setSelected }) {
                         {allItems.length > visibleItems.length ? ` / ${allItems.length}` : ""} items
                     </span>
                 )}
-            </div>
+            </div> */}
 
             {/* Error */}
             {error && (
@@ -306,7 +306,7 @@ export default function ListOfTemplates({ selected, setSelected }) {
             {/* End of list */}
             {!loading && !loadingMore && visibleItems.length > 0 && renderedCount.current >= allItems.length && (
                 <p className="text-center text-xs text-default-300 py-2">
-                    All {allItems.length} items loaded
+                    {/* All {allItems.length} items loaded */}
                 </p>
             )}
         </div>

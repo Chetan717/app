@@ -42,6 +42,7 @@ function MainEditor() {
   const [error, setError] = useState(null);
   const isMounted = useRef(true);
 
+  const [middaleImage, setmiddaleImage] = useState(null);
   useEffect(() => {
     isMounted.current = true;
 
@@ -122,6 +123,8 @@ function MainEditor() {
           selectedFooterFrame={selectedFooterFrame}
           isOpen={isOpen}
           setIsOpen={setIsOpen}
+          middaleImage={middaleImage}
+          setmiddaleImage={setmiddaleImage}
         />
       ) : (
         <MlmEditPage
@@ -134,6 +137,8 @@ function MainEditor() {
           selectedFooterFrame={selectedFooterFrame}
           isOpen={isOpen}
           setIsOpen={setIsOpen}
+          middaleImage={middaleImage}
+          setmiddaleImage={setmiddaleImage}
         />
       )}
       <TopuplineSelect

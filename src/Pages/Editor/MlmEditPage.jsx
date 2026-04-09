@@ -39,7 +39,9 @@ function MlmEditPage({
   setIsOpenFtr,
   isOpen,
   setIsOpen,
-  selectedFooterFrame
+  selectedFooterFrame,
+  middaleImage,
+  setmiddaleImage,
 }) {
   const stageRef = useRef(null);
   const stageContainerRef = useRef(null);
@@ -53,7 +55,11 @@ function MlmEditPage({
     const formData = localStorage.getItem("mlmform");
     const profileData = localStorage.getItem("mlmProfile");
     if (formData) setMlmForm(JSON.parse(formData));
-    if (profileData) setMlmProfile(JSON.parse(profileData));
+    if (profileData) {
+      const parsed = JSON.parse(profileData);
+      setMlmProfile(parsed);
+      setmiddaleImage(parsed?.profileImageURLs?.[0] || null);
+    }
   }, []);
 
   // ── Type flags ────────────────────────────────────────────────
@@ -128,9 +134,7 @@ function MlmEditPage({
     "anonymous",
   );
   const [ImageProfile] = useImage(
-    mlmForm?.promoter?.name
-      ? `${mlmForm.promoter.image}`
-      : `${mlmProfile?.profileImageURLs?.[0]}`,
+    mlmForm?.promoter?.name ? `${mlmForm.promoter.image}` : `${middaleImage}`,
     "anonymous",
   );
 
@@ -154,10 +158,6 @@ function MlmEditPage({
 
   return (
     <div className="flex flex-col justify-start items-center h-full">
-      <Button onClick={handleExport} className="mb-2">
-        Export
-      </Button>
-
       <div
         ref={stageContainerRef}
         className="relative mt-2"
@@ -232,6 +232,22 @@ function MlmEditPage({
           setIsOpen={setIsOpen}
           setIsOpenFtr={setIsOpenFtr}
         />
+      </div>
+      <div className="flex lg:w-1/3 w-full  flex-row gap-2 justify-between Items-center mt-2 ">
+        <div className="flex flex-row justify-start items-center w-1/2 h-[40px]  ml-3">
+          {mlmProfile?.profileImageURLs?.map((img, index) => (
+            <img
+              key={index}
+              src={img}
+              onClick={() => setmiddaleImage(img)}
+              className={`w-[35px] h-[35px] object-contain cursor-pointer transition-all
+        ${middaleImage === img ? "border-2 border-accent rounded " : ""}`}
+            />
+          ))}
+        </div>
+        <Button size="sm" onClick={handleExport} className=" mr-5">
+          Download
+        </Button>
       </div>
 
       <ListOfTemplates selected={selected} setSelected={setSelected} />
