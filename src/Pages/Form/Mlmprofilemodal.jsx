@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from "react";
-import { db, app } from "../../../firebase";
+import { db, app } from "../../../Firebase";
 import {
   collection, addDoc, updateDoc, doc,
   serverTimestamp, query, where, getDocs,

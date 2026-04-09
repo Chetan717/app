@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useMemo } from "react";
-import { db } from "../../../firebase";
+import { db } from "../../../Firebase";
 import { collection, getDocs } from "firebase/firestore";
 import MlmEditPage from "./MlmEditPage";
 import GeneralEditPage from "./GenralEditPage";

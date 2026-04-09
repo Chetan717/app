@@ -1,4 +1,4 @@
-import { db } from "../../../../../firebase";
+import { db } from "../../../../../Firebase";
 import { collection, query, where, getDocs } from "firebase/firestore";
 
 export const TTrend_templateService = async () => {

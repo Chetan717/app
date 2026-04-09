@@ -6,7 +6,7 @@ import {
     getDocs,
     orderBy,
 } from "firebase/firestore";
-import { db } from "../../../../firebase";
+import { db } from "../../../../Firebase";
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 const BATCH_SIZE = 20;

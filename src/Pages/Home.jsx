@@ -4,7 +4,7 @@ import ListOfGenaraltemp from "../Pages/Homepage/Component/ListOfGenaraltemp";
 import React, { useEffect, useRef, useState, useCallback } from "react";
 import { fetchGeneralTemplates } from "../Pages/Homepage/Component/Services/GeneralTemplateService";
 import { useGeneralData } from "../Context/GeneralContext";
-import { db } from "../../firebase"; 
+import { db } from "../../Firebase"; 
 import { doc, getDoc } from "firebase/firestore";
 
 const TOTAL_GROUPS = 4;
