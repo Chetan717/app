@@ -271,7 +271,7 @@ export default function SalesExecutiveForm() {
     };
 
     localStorage.setItem("mlmform", JSON.stringify(formData));
-    navigate("/editor");
+    navigate("/Editor");
   };
 
   // ─── Clear saved form (optional reset button) ──────────────────────────────

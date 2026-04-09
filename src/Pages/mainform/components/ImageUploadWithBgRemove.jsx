@@ -5,21 +5,21 @@ export default function ImageUploadWithBgRemove({
   onImageReady,
   setEditingImage,
   setOnImageDone,
-  currentImage,       // ← blob or URL of the already-uploaded image
+  currentImage, // ← blob or URL of the already-uploaded image
   onRequestReEdit,
   setOpen,
-  open   // ← called when user clicks the preview to re-edit
+  open, // ← called when user clicks the preview to re-edit
 }) {
   const inputRef = useRef();
-  const [load, setLoad] = useState(false)
+  const [load, setLoad] = useState(false);
   const handleFile = async (file) => {
     try {
-      setLoad(true)
+      setLoad(true);
       const bgRemoved = await removeBg(file);
       const preview = URL.createObjectURL(bgRemoved);
       if (preview) {
-        setOpen(true)
-        setLoad(false)
+        setOpen(true);
+        setLoad(false);
       }
       setEditingImage(preview);
       setOnImageDone(() => (blob) => {
@@ -40,13 +40,17 @@ export default function ImageUploadWithBgRemove({
   // Default: empty upload zone
   return (
     <>
-      {load ? <div className="h-[190px] border flex flex-col gap-2 justify-center items-center p-2 rounded-lg cursor-pointer hover:bg-slate-50 transition">
-        <ProgressCircle isIndeterminate aria-label="Loading">
-          <ProgressCircle.Track>
-            <ProgressCircle.TrackCircle />
-            <ProgressCircle.FillCircle />
-          </ProgressCircle.Track>
-        </ProgressCircle> </div> : currentImage ? <div
+      {load ? (
+        <div className="h-[190px] border flex flex-col gap-2 justify-center items-center p-2 rounded-lg cursor-pointer hover:bg-slate-50 transition">
+          <ProgressCircle isIndeterminate aria-label="Loading">
+            <ProgressCircle.Track>
+              <ProgressCircle.TrackCircle />
+              <ProgressCircle.FillCircle />
+            </ProgressCircle.Track>
+          </ProgressCircle>{" "}
+        </div>
+      ) : currentImage ? (
+        <div
           onClick={() => inputRef.current.click()}
           className="relative w-full h-[190px] border-2 border-dashed border-primary rounded-lg overflow-hidden cursor-pointer group"
         >
@@ -74,7 +78,7 @@ export default function ImageUploadWithBgRemove({
             <p className="text-white text-xs font-semibold">Tap to change</p>
           </div>
         </div>
-        :
+      ) : (
         <div
           onClick={() => inputRef.current.click()}
           className="h-[190px] border flex flex-col gap-2 justify-center items-center p-2 rounded-lg cursor-pointer hover:bg-slate-50 transition"
@@ -94,7 +98,8 @@ export default function ImageUploadWithBgRemove({
             />
           </svg>
           <p className="text-xs text-gray-600 font-bold">Upload Image</p>
-        </div>}
+        </div>
+      )}
 
       <input
         ref={inputRef}

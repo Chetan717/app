@@ -163,23 +163,22 @@ export default function MultiImagePicker({
                       <svg viewBox="0 0 20 20" fill="currentColor" className="w-5 h-5 text-accent">
                         <path d="M4 5a2 2 0 012-2h2l1-1h2l1 1h2a2 2 0 012 2v9a2 2 0 01-2 2H6a2 2 0 01-2-2V5zm6 3a3 3 0 100 6 3 3 0 000-6z" />
                       </svg>
-                      Upload Images
+                      Upload Image
                     </button>
 
                     <input
                       ref={inputRef}
                       type="file"
                       accept="image/*"
-                      multiple
                       className="hidden"
                       onChange={(e) => {
                         const files = Array.from(e.target.files || []);
                         if (!files.length) return;
 
-                        const remaining = maxImages - totalSelected;
-                        const allowedFiles = files.slice(0, remaining);
+                        const file = files[0];
+                        if (totalSelected >= maxImages) return;
 
-                        onAddCustomFiles(allowedFiles);
+                        onAddCustomFiles([file]);
                         e.target.value = "";
                       }}
                     />

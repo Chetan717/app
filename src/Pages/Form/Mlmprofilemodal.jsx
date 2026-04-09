@@ -10,7 +10,7 @@ import {
 } from "firebase/storage";
 import MultiImagePicker from "./MultiImagePicker";
 import { ImageEditorCanvas } from "./ImageEditorCanvas";
-import { toast } from "@heroui/react"; // ✅ added
+import { toast } from "@heroui/react"; 
 
 const storage = getStorage(app);
 
@@ -238,19 +238,15 @@ export default function MLMProfilePage() {
 
   // ── Profile photo ──────────────────────────────────────────
   const handleProfileFileSelect = async (e) => {
-    const files = Array.from(e.target.files || []);
-    if (!files.length) return;
+    const file = e.target.files[0];
+    if (!file) return;
     setRemovingBg(true);
     try {
-      const blobs = await Promise.all(
-        files.map(async (file) => {
-          const noBgBlob = await removeBackground(file);
-          return noBgBlob || file;
-        })
-      );
-      setEditorSrc(URL.createObjectURL(blobs[0]));
+      const noBgBlob = await removeBackground(file);
+      const blob = noBgBlob || file;
+      setEditorSrc(URL.createObjectURL(blob));
       setEditingProfileIndex("new");
-      setForm((f) => ({ ...f, _pendingProfileBlobs: blobs.slice(1) }));
+      setForm((f) => ({ ...f, _pendingProfileBlobs: [] }));
       setStep("editor");
     } catch (err) {
       console.error(err);
@@ -616,7 +612,7 @@ export default function MLMProfilePage() {
                       <img
                         src={url}
                         alt={`Profile ${idx + 1}`}
-                        className="w-20 h-20 rounded-xl object-cover border-2 border bg-slate-100"
+                        className="w-20 h-20 rounded-xl object-contain border-2 border bg-slate-100"
                       />
                       {isExisting && (
                         <span className="absolute -top-1 -right-1 bg-green-500 text-white text-[9px] px-1.5 py-0.5 rounded-full leading-tight">
@@ -662,7 +658,7 @@ export default function MLMProfilePage() {
                 </>
               )}
             </div>
-            <input ref={profileInputRef} type="file" accept="image/*" multiple onChange={handleProfileFileSelect} className="hidden" />
+            <input ref={profileInputRef} type="file" accept="image/*" onChange={handleProfileFileSelect} className="hidden" />
           </div>
         </div>
 
