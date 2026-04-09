@@ -10,12 +10,28 @@ import MlmProfile from "./Pages/Mymlmprofile/MlmProfile";
 import ProtectMlmProfile from "./Pages/SelectCompany/ProtectMlmProfile";
 import ProtectSelectComp from "./Pages/SelectCompany/ProtectSelectComp"; // ✅ new
 import SelectComp from "./Pages/SelectCompany/SelectComp";
-import { Routes, Route } from "react-router";
+import { Routes, Route, useNavigate } from "react-router";
 import AllTemplates from "./Pages/Homepage/Component/AllTemplates";
 import Mainform from "./Pages/mainform/Mainform";
 import MainEditor from "./Pages/Editor/MainEditor";
+import { useEffect } from "react";
 
 function App() {
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    const handleBackPressed = () => {
+      // Navigate back in React Router history
+      navigate(-1);
+    };
+
+    window.addEventListener('webviewBackPressed', handleBackPressed);
+
+    return () => {
+      window.removeEventListener('webviewBackPressed', handleBackPressed);
+    };
+  }, [navigate]);
+
   return (
     <Routes>
 

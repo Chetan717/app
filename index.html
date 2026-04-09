@@ -5,6 +5,19 @@
     <link rel="icon" type="image/svg+xml" href="./public/mlmboo2.ico" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>MLMBOOSTER</title>
+    <script>
+      window.addEventListener('load', function() {
+        // Push initial state to ensure there's history
+        window.history.pushState({page: 'app'}, '', window.location.pathname);
+      });
+
+      window.addEventListener('popstate', function(event) {
+        // Dispatch custom event to React app
+        window.dispatchEvent(new CustomEvent('webviewBackPressed'));
+        // Push state back to prevent immediate exit
+        window.history.pushState({page: 'app'}, '', window.location.pathname);
+      });
+    </script>
   </head>
   <body>
     <div id="root"></div>
