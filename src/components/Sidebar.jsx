@@ -7,6 +7,7 @@ import {
   Person,
   LogoMicrosoftOffice,
   Sack,
+  SignOut,
 } from "@gravity-ui/icons";
 import { useNavigate } from "react-router";
 import logo from "../../public/mlmboo2.ico";
@@ -29,7 +30,7 @@ const NAV_ITEMS = [
 
 const BOTTOM_ITEMS = [
   //   { icon: Hand, label: "Settings", id: "settings" },
-  //   { icon: Hand, label: "Logout", id: "logout" },
+  { icon: SignOut, label: "Logout", id: "logout", link: "/logout" },
 ];
 
 export default function Sidebar({ collapsed, setCollapsed, mobileOpen, setMobileOpen, active, setActive }) {
@@ -153,13 +154,13 @@ export default function Sidebar({ collapsed, setCollapsed, mobileOpen, setMobile
 
         {/* Bottom actions */}
         <div className="dark:border-gray-800/70 px-2 py-3 space-y-0.5">
-          {BOTTOM_ITEMS.map(({ icon: Icon, label, id }) => {
+          {BOTTOM_ITEMS.map(({ icon: Icon, label, id, link }) => {
             const isActive = active === id;
             const isLogout = id === "logout";
             return (
               <button
                 key={id}
-                onClick={() => handleNav(id)}
+                onClick={() => link ? hanClick(id, link) : handleNav(id)}
                 className={[
                   "w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all duration-200 group relative",
                   isLogout
@@ -169,7 +170,9 @@ export default function Sidebar({ collapsed, setCollapsed, mobileOpen, setMobile
                       : "text-gray-500 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800/60 hover:text-gray-700 dark:hover:text-gray-200",
                 ].join(" ")}
               >
-                <span className="min-w-[20px] flex-shrink-0" />
+                <span className={["min-w-[20px] flex-shrink-0 transition-colors", isLogout ? "text-red-400 group-hover:text-red-500" : ""].join(" ")}>
+                  <Icon className="w-5 h-5" />
+                </span>
                 <span className={[
                   "flex-1 text-left whitespace-nowrap transition-all duration-300",
                   collapsed ? "md:opacity-0 md:w-0 md:overflow-hidden" : "opacity-100",

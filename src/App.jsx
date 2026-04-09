@@ -2,6 +2,7 @@ import Home from "./Pages/Home";
 import { Login } from "./Auth/Login";
 import { Signup } from "./Auth/Signup";
 import { Forgetpin } from "./Auth/ForgetPin";
+import { Logout } from "./Auth/Logout";
 import ProtectedRoute from "./Auth/ProtectedR";
 import Layout from "./Layout";
 import MainSubscription from "./Pages/Subscription/MainSubscription";
@@ -22,6 +23,7 @@ function App() {
       <Route path="/login" element={<Login />} />
       <Route path="/signup" element={<Signup />} />
       <Route path="/forgetpin" element={<Forgetpin />} />
+      <Route path="/logout" element={<Logout />} />
 
       {/* ── Company selection ── blocked if profile already exists */}
       <Route
