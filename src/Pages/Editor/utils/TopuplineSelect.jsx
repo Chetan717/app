@@ -11,7 +11,7 @@ export default function TopuplineSelect({
   const [selectedFrame, setSelectedFrame] = useState(null);
 
   useEffect(() => {
-    if (frames.length > 0 && !selectedFrame) {
+    if (frames?.length > 0 && !selectedFrame) {
       setSelectedFrame(frames[0]);
       onFrameSelect?.(frames[0]);
     }
@@ -31,7 +31,7 @@ export default function TopuplineSelect({
             </Modal.Header>
             <Modal.Body>
               <div className="grid grid-cols-2 gap-3">
-                {frames.map((frame) => {
+                {frames?.map((frame) => {
                   const isSelected = selectedFrame?.id === frame.id;
                   return (
                     <button

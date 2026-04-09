@@ -1,9 +1,10 @@
 import React, { useState, useEffect, useRef, useMemo } from "react";
-import { db } from "../../../Firebase";
+import { db } from "../../../firebase";
 import { collection, getDocs } from "firebase/firestore";
 import MlmEditPage from "./MlmEditPage";
 import GeneralEditPage from "./GenralEditPage";
-
+import FooterSelect from "./utils/FooterSelect";
+import TopuplineSelect from "./utils/TopuplineSelect";
 export const GENERAL_SELECT_TYPES = [
   { name: "Trending", value: "Trending" },
   { name: "Festival", value: "Festival" },
@@ -12,7 +13,7 @@ export const GENERAL_SELECT_TYPES = [
   { name: "Devotional / Spiritual", value: "Devotional_Spiritual" },
   { name: "Leader Quotes", value: "Leader_Quotes" },
   { name: "Health Tips", value: "Health_Tips" },
-  { name: "Anniversary & Birthday", value: "Anniversary_Birthday" },
+  // { name: "Anniversary & Birthday", value: "Anniversary_Birthday" },
   { name: "Greeting & Wishes", value: "Greeting_Wishes" },
   {
     name: "Thank You (Birthday & Anniversary)",
@@ -20,17 +21,14 @@ export const GENERAL_SELECT_TYPES = [
   },
 ];
 
-// ── Module-level cache — persists across re-mounts ─────────────────
 const collectionCache = {
   data: null,
   isFetched: false,
 };
 
-// ── Pure helper — group active docs by GraphicsType ────────────────
-// Returns: { TopUplineFrames: [...], Footers: [...], ... }
 function groupByGraphicsType(data) {
   return data.reduce((acc, item) => {
-    if (!item.Active) return acc; // skip inactive
+    if (!item.Active) return acc;
     const type = item.GraphicsType;
     if (!acc[type]) acc[type] = [];
     acc[type].push(item);
@@ -82,7 +80,7 @@ function MainEditor() {
   // graphicsMap = { TopUplineFrames: [...], Footers: [...] }
   const graphicsMap = useMemo(
     () => (collectionData ? groupByGraphicsType(collectionData) : {}),
-    [collectionData]
+    [collectionData],
   );
 
   function getSelType() {
@@ -96,19 +94,62 @@ function MainEditor() {
   const selll = getSelType();
 
   const isGeneralType = GENERAL_SELECT_TYPES.some(
-    (t) => t.value === selll?.type
+    (t) => t.value === selll?.type,
   );
 
+  const frames = graphicsMap?.["TopUplineFrames"]?.[0]?.GraphicsLinks || [];
+  const [selectedTopFrame, setSelectedTopFrame] = useState(frames[0] || null);
+  const [isOpen, setIsOpen] = useState(false);
+
+  const Footersframes = graphicsMap?.["Footers"]?.[0]?.GraphicsLinks || [];
+  const [selectedFooterFrame, setSelectedFooterFrame] = useState(
+    Footersframes[0] || null,
+  );
+  const [isOpenFtr, setIsOpenFtr] = useState(false);
   if (loading) return <div>Loading...</div>;
   if (error) return <div>Error: {error}</div>;
 
   return (
     <>
       {isGeneralType ? (
-        <GeneralEditPage graphicsMap={graphicsMap} />
+        <GeneralEditPage
+          graphicsMap={graphicsMap}
+          frames={frames}
+          selectedTopFrame={selectedTopFrame}
+          setSelectedTopFrame={setSelectedTopFrame}
+          isOpenFtr={isOpenFtr}
+          setIsOpenFtr={setIsOpenFtr}
+          selectedFooterFrame={selectedFooterFrame}
+          isOpen={isOpen}
+          setIsOpen={setIsOpen}
+        />
       ) : (
-        <MlmEditPage graphicsMap={graphicsMap} />
+        <MlmEditPage
+          graphicsMap={graphicsMap}
+          frames={frames}
+          selectedTopFrame={selectedTopFrame}
+          setSelectedTopFrame={setSelectedTopFrame}
+          isOpenFtr={isOpenFtr}
+          setIsOpenFtr={setIsOpenFtr}
+          selectedFooterFrame={selectedFooterFrame}
+          isOpen={isOpen}
+          setIsOpen={setIsOpen}
+        />
       )}
+      <TopuplineSelect
+        frames={frames}
+        onFrameSelect={(frame) => setSelectedTopFrame(frame)}
+        setIsOpen={setIsOpen}
+        isOpen={isOpen}
+      />
+      <FooterSelect
+        isOpenFtr={isOpenFtr}
+        setIsOpenFtr={setIsOpenFtr}
+        frames={Footersframes}
+        setSelectedFooterFrame={setSelectedFooterFrame}
+        onFrameSelectFooter={(frame) => setSelectedFooterFrame(frame)}
+        selectedFooterFrame={selectedFooterFrame}
+      />
     </>
   );
 }

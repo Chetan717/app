@@ -1,73 +1,61 @@
 import React, { useState, useEffect } from "react";
 import { Modal, Button } from "@heroui/react";
 
-export default function FooterSelect({graphicsMap, onFrameSelectFooter}) {
-  const frames = graphicsMap?.["Footers"]?.[0]?.GraphicsLinks || [];
-
-  const [isOpen, setIsOpen] = useState(false);
-  const [selectedFrame, setSelectedFrame] = useState(null);
-
+export default function FooterSelect({
+  graphicsMap,
+  frames,
+  selectedFooterFrame,
+  setSelectedFooterFrame,
+  onFrameSelectFooter,
+  isOpenFtr,
+  setIsOpenFtr,
+}) {
   useEffect(() => {
-    if (frames.length > 0 && !selectedFrame) {
-      setSelectedFrame(frames[0]);
-      onFrameSelect?.(frames[0]);
+    if (frames?.length > 0 && !selectedFooterFrame) {
+      setSelectedFooterFrame(frames[0]);
+      onFrameSelectFooter?.(frames[0]);
     }
   }, [frames]);
 
   const handleSelect = (frame) => {
-    setSelectedFrame(frame);
-    onFrameSelect?.(frame);
+    setSelectedFooterFrame(frame);
+    onFrameSelectFooter?.(frame);
   };
   return (
-    <Modal>
-      <Button variant="secondary">Open Modal</Button>
+    <Modal isOpen={isOpenFtr}>
       <Modal.Backdrop>
         <Modal.Container>
           <Modal.Dialog className="sm:max-w-[360px]">
-            <Modal.CloseTrigger />
             <Modal.Header>
               <Modal.Heading>Select Frames</Modal.Heading>
             </Modal.Header>
             <Modal.Body>
-              <div className="grid grid-cols-2 gap-3">
-                {frames.map((frame) => {
-                  const isSelected = selectedFrame?.id === frame.id;
+              <div className="flex flex-col gap-2 justify-center items-center">
+                {frames?.map((frame) => {
+                  const isSelected = selectedFooterFrame?.id === frame.id;
                   return (
-                    <button
+                    <div
                       key={frame.id}
                       onClick={() => handleSelect(frame)}
-                      className={`relative rounded-xl overflow-hidden aspect-square border-2 transition-all
-                          ${isSelected ? "border-indigo-500" : "border-slate-200"}`}
+                      className={`rounded-xl  h-[60px] p-1 flex justify-center items-center border-2
+                          ${isSelected ? "border-accent" : ""}`}
                     >
                       <img
                         src={frame.value}
                         alt={`Frame ${frame.id}`}
-                        className="w-full h-full object-cover"
+                        className="w-full h-[55px] object-contain"
                       />
-                      {isSelected && (
-                        <div className="absolute top-1.5 right-1.5 w-5 h-5 rounded-full bg-indigo-500 flex items-center justify-center">
-                          <svg
-                            className="w-3 h-3 text-white"
-                            fill="none"
-                            viewBox="0 0 24 24"
-                            stroke="currentColor"
-                            strokeWidth={3}
-                          >
-                            <path
-                              strokeLinecap="round"
-                              strokeLinejoin="round"
-                              d="M5 13l4 4L19 7"
-                            />
-                          </svg>
-                        </div>
-                      )}
-                    </button>
+                    </div>
                   );
                 })}
               </div>
             </Modal.Body>
             <Modal.Footer>
-              <Button className="w-full" slot="close">
+              <Button
+                onClick={() => setIsOpenFtr(false)}
+                className="w-full"
+                slot="close"
+              >
                 Continue
               </Button>
             </Modal.Footer>

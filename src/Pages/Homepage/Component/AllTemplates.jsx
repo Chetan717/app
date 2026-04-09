@@ -125,7 +125,7 @@ export default function AllTemplates() {
         // { name: "Income", value: "Income" },
         // { name: "Welcome / Closing", value: "Welcome_Closing" },
         { name: "Meeting", value: "Meeting" },
-        { name: "Anniversary & Birthday", value: "Anniversary_Birthday" },
+        // { name: "Anniversary & Birthday", value: "Anniversary_Birthday" },
         { name: "Greeting & Wishes", value: "Greeting_Wishes" },
         { name: "Thank You (Birthday & Anniversary)", value: "ThankYou_Birthday_Anniversary" },
         // { name: "Capping", value: "Capping" },

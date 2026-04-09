@@ -2,7 +2,6 @@ import React, { useState, useEffect, useRef } from "react";
 import { Stage, Layer, Text, Image, Transformer } from "react-konva";
 import useImage from "use-image";
 import ListOfTemplates from "./components/ListOfTemplates";
-import TopuplineSelect from "./utils/TopuplineSelect";
 import { Button } from "@heroui/react";
 
 const STAGE_WIDTH = 320;
@@ -10,14 +9,8 @@ const STAGE_HEIGHT = 320;
 const EXPORT_PIXEL_RATIO = 6;
 
 export const GENERAL_SELECT_TYPES = [
-  //   { name: "Trending", value: "Trending" },
-  //   { name: "Festival", value: "Festival" },
   { name: "Motivational", value: "Motivational" },
-  //   { name: "Good Morning", value: "Good_Morning" },
-  //   { name: "Devotional / Spiritual", value: "Devotional_Spiritual" },
-  //   { name: "Leader Quotes", value: "Leader_Quotes" },
-  //   { name: "Health Tips", value: "Health_Tips" },
-  { name: "Anniversary & Birthday", value: "Anniversary_Birthday" },
+  // { name: "Anniversary & Birthday", value: "Anniversary_Birthday" },
   { name: "Greeting & Wishes", value: "Greeting_Wishes" },
   {
     name: "Thank You (Birthday & Anniversary)",
@@ -27,19 +20,20 @@ export const GENERAL_SELECT_TYPES = [
 
 const clamp = (val, min, max) => Math.min(Math.max(val, min), max);
 
-function GeneralEditPage({ graphicsMap }) {
+function GeneralEditPage({
+  selectedTopFrame,
+  setIsOpenFtr,
+  setIsOpen,
+  selectedFooterFrame,
+}) {
   const stageRef = useRef(null);
   const profileImageRef = useRef(null);
   const transformerRef = useRef(null);
   const stageContainerRef = useRef(null);
 
-  const frames = graphicsMap?.["TopUplineFrames"]?.[0]?.GraphicsLinks || [];
-
   const [mlmForm, setMlmForm] = useState(null);
   const [mlmProfile, setMlmProfile] = useState(null);
   const [selected, setSelected] = useState(null);
-  const [selectedTopFrame, setSelectedTopFrame] = useState(frames[0] || null);
-  const [isOpen, setIsOpen] = useState(false);
   const [isProfileSelected, setIsProfileSelected] = useState(false);
 
   // Toolbar position over the canvas (in px relative to stage container)
@@ -62,7 +56,7 @@ function GeneralEditPage({ graphicsMap }) {
     setProfileAttrs((prev) => ({
       ...prev,
       x: isRight ? -1 : 140,
-      y: 55,
+      y: 60,
       width: 180,
       height: 230,
       scaleX: 1,
@@ -123,7 +117,8 @@ function GeneralEditPage({ graphicsMap }) {
 
   const [bgImage] = useImage(`${selected?.url || ""}`, "anonymous");
   const [Imagefooter] = useImage(
-    "https://firebasestorage.googleapis.com/v0/b/mlmbooster.firebasestorage.app/o/graphics%2Flinks%2F1775306097021_qqhdl6.webp?alt=media&token=54d461df-8c6a-459d-be1d-505e7471ba50",
+    selectedFooterFrame?.value ||
+      "https://firebasestorage.googleapis.com/v0/b/mlmbooster.firebasestorage.app/o/graphics%2Flinks%2F1775306097021_qqhdl6.webp?alt=media&token=54d461df-8c6a-459d-be1d-505e7471ba50",
     "anonymous",
   );
   const [Imagel2] = useImage(mlmProfile?.logoURLs?.[0] || "", "anonymous");
@@ -161,7 +156,6 @@ function GeneralEditPage({ graphicsMap }) {
       downloadURI(uri, "stage-hd.png");
     }, 50);
   };
-
   // ── Flip horizontal ──────────────────────────────────────────────
   const handleFlip = (e) => {
     e.stopPropagation(); // prevent stage deselect
@@ -263,7 +257,7 @@ function GeneralEditPage({ graphicsMap }) {
 
   let ProfilefontSize = 10;
   if (ActualProfilename?.length > 10 && ActualProfilename?.length <= 19)
-    ProfilefontSize = 8;
+    ProfilefontSize = 7;
   else if (ActualProfilename?.length > 19) ProfilefontSize = 6;
 
   let DesignationfontSize = 8;
@@ -287,13 +281,6 @@ function GeneralEditPage({ graphicsMap }) {
         Export
       </Button>
 
-      <TopuplineSelect
-        frames={frames}
-        onFrameSelect={(frame) => setSelectedTopFrame(frame)}
-        setIsOpen={setIsOpen}
-        isOpen={isOpen}
-      />
-
       {/* Wrapper gives a positioning context for the floating toolbar */}
       <div
         ref={stageContainerRef}
@@ -303,7 +290,6 @@ function GeneralEditPage({ graphicsMap }) {
         {/* ── Floating flip toolbar ── */}
         {isProfileSelected && (
           <div
-            // onMouseDown={(e) => e.stopPropagation()}
             style={{
               position: "absolute",
               top: toolbarTop,
@@ -320,7 +306,6 @@ function GeneralEditPage({ graphicsMap }) {
           >
             {/* Flip icon button */}
             <button
-              //    onClick={handleFlip}
               title="Flip horizontal"
               style={{
                 background: "none",
@@ -410,7 +395,6 @@ function GeneralEditPage({ graphicsMap }) {
               height={18}
             />
 
-            {/* Profile image — rendered below footer so footer overlays it */}
             {isSubGeneralType ? (
               <Image
                 ref={profileImageRef}
@@ -430,10 +414,11 @@ function GeneralEditPage({ graphicsMap }) {
               />
             ) : null}
 
-            {/* Footer always on top */}
             {isRight ? (
               <Image
                 scaleX={-1}
+                onClick={() => setIsOpenFtr(true)}
+                onTap={() => setIsOpenFtr(true)}
                 scaleY={1}
                 image={Imagefooter}
                 x={320}
@@ -444,6 +429,8 @@ function GeneralEditPage({ graphicsMap }) {
             ) : (
               <Image
                 image={Imagefooter}
+                onClick={() => setIsOpenFtr(true)}
+                onTap={() => setIsOpenFtr(true)}
                 x={0}
                 y={280}
                 width={350}
@@ -463,6 +450,8 @@ function GeneralEditPage({ graphicsMap }) {
                   fill="white"
                   fontStyle="bold"
                   verticalAlign="middle"
+                  onClick={() => setIsOpenFtr(true)}
+                  onTap={() => setIsOpenFtr(true)}
                 />
                 <Text
                   x={190}
@@ -474,11 +463,13 @@ function GeneralEditPage({ graphicsMap }) {
                   fill="white"
                   fontStyle="bold"
                   verticalAlign="middle"
+                  onClick={() => setIsOpenFtr(true)}
+                  onTap={() => setIsOpenFtr(true)}
                 />
                 <Text
-                  x={isSubGeneralType ? 40 : 76}
+                  x={isSubGeneralType ? -10 : 70}
                   y={295}
-                  width={100}
+                  width={isSubGeneralType ? 205 : 120}
                   height={2}
                   text={ActualProfilename}
                   fontSize={ProfilefontSize}
@@ -486,11 +477,13 @@ function GeneralEditPage({ graphicsMap }) {
                   fontStyle="1000"
                   align="center"
                   verticalAlign="middle"
+                  onClick={() => setIsOpenFtr(true)}
+                  onTap={() => setIsOpenFtr(true)}
                 />
                 <Text
-                  x={isSubGeneralType ? 40 : 76}
+                  x={isSubGeneralType ? -10 : 76}
                   y={303}
-                  width={100}
+                  width={isSubGeneralType ? 205 : 120}
                   height={2}
                   text={ActualDesignation}
                   fontSize={DesignationfontSize}
@@ -498,6 +491,8 @@ function GeneralEditPage({ graphicsMap }) {
                   fontStyle="bold"
                   align="center"
                   verticalAlign="middle"
+                  onClick={() => setIsOpenFtr(true)}
+                  onTap={() => setIsOpenFtr(true)}
                 />
               </>
             ) : (
@@ -512,6 +507,8 @@ function GeneralEditPage({ graphicsMap }) {
                   fill="white"
                   fontStyle="bold"
                   verticalAlign="middle"
+                  onClick={() => setIsOpenFtr(true)}
+                  onTap={() => setIsOpenFtr(true)}
                 />
                 <Text
                   x={39}
@@ -523,6 +520,8 @@ function GeneralEditPage({ graphicsMap }) {
                   fill="white"
                   fontStyle="bold"
                   verticalAlign="middle"
+                  onClick={() => setIsOpenFtr(true)}
+                  onTap={() => setIsOpenFtr(true)}
                 />
                 <Text
                   x={133}
@@ -535,6 +534,9 @@ function GeneralEditPage({ graphicsMap }) {
                   fontStyle="1000"
                   align="center"
                   verticalAlign="middle"
+                  a
+                  onClick={() => setIsOpenFtr(true)}
+                  onTap={() => setIsOpenFtr(true)}
                 />
                 <Text
                   x={133}
@@ -547,6 +549,8 @@ function GeneralEditPage({ graphicsMap }) {
                   fontStyle="bold"
                   align="center"
                   verticalAlign="middle"
+                  onClick={() => setIsOpenFtr(true)}
+                  onTap={() => setIsOpenFtr(true)}
                 />
               </>
             )}

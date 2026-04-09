@@ -1,387 +1,220 @@
-import React, { useState, useEffect } from "react";
-import { Stage, Layer, Text, Circle, Image, Rect } from "react-konva";
+import React, { useState, useEffect, useRef } from "react";
 import useImage from "use-image";
+import { Button } from "@heroui/react";
+
+import {
+  STAGE_WIDTH,
+  STAGE_HEIGHT,
+  EXPORT_PIXEL_RATIO,
+  GENERAL_SELECT_TYPES,
+  GENERAL_SELECT_TYPES_birthday,
+  GENERAL_SELECT_TYPES_bonanza,
+} from "./Constants";
+import { useProfileState } from "./useProfileState";
+import { useToolbarPositions } from "./useToolbarPositions";
+import KonvaCanvas from "./KonvaCanvas";
+import FlipToolbar from "./FlipToolbar";
 import ListOfTemplates from "./components/ListOfTemplates";
 
-const STAGE_WIDTH = 320;
-const STAGE_HEIGHT = 320;
-const HEADER_FOOTER_HEIGHT = 50;
-const EXPORT_PIXEL_RATIO = 6;
+// ── Font-size helper ──────────────────────────────────────────────
+function calcFontSize(text, large, medium, small) {
+  if (text.length > 19) return small;
+  if (text.length > 10) return medium;
+  return large;
+}
 
-export const GENERAL_SELECT_TYPES = [
-  { name: "Trending", value: "Trending" },
-  { name: "Festival", value: "Festival" },
-  { name: "Motivational", value: "Motivational" },
-  { name: "Good Morning", value: "Good_Morning" },
-  { name: "Devotional / Spiritual", value: "Devotional_Spiritual" },
-  { name: "Leader Quotes", value: "Leader_Quotes" },
-  { name: "Health Tips", value: "Health_Tips" },
-  // { name: "Bonanza", value: "Bonanza" },
-  // { name: "Achievements", value: "Achievements" },
-  // { name: "Achievements B", value: "Achievements_B" },
-  // { name: "Income", value: "Income" },
-  // { name: "Welcome / Closing", value: "Welcome_Closing" },
-  // { name: "Meeting", value: "Meeting" },
-  { name: "Anniversary & Birthday", value: "Anniversary_Birthday" },
-  { name: "Greeting & Wishes", value: "Greeting_Wishes" },
-  {
-    name: "Thank You (Birthday & Anniversary)",
-    value: "ThankYou_Birthday_Anniversary",
-  },
-  // { name: "Capping", value: "Capping" },
-];
+function getSelType() {
+  try {
+    return JSON.parse(localStorage.getItem("selType")) || {};
+  } catch {
+    return {};
+  }
+}
 
-function MlmEditPage() {
-  const stageRef = React.useRef(null);
-  const TemplatePosition = true;
+function MlmEditPage({
+  selectedTopFrame,
+  setSelectedTopFrame,
+  frames,
+  isOpenFtr,
+  setIsOpenFtr,
+  isOpen,
+  setIsOpen,
+  selectedFooterFrame,
+}) {
+  const stageRef = useRef(null);
+  const stageContainerRef = useRef(null);
 
+  // ── Form / profile data ───────────────────────────────────────
   const [mlmForm, setMlmForm] = useState(null);
   const [mlmProfile, setMlmProfile] = useState(null);
   const [selected, setSelected] = useState(null);
 
-  function getSelType() {
-    try {
-      return JSON.parse(localStorage.getItem("selType")) || {};
-    } catch {
-      return {};
-    }
-  }
-
   useEffect(() => {
-    const formData = localStorage.getItem("mlmform");
+    const formData    = localStorage.getItem("mlmform");
     const profileData = localStorage.getItem("mlmProfile");
-    if (formData) setMlmForm(JSON.parse(formData));
+    if (formData)    setMlmForm(JSON.parse(formData));
     if (profileData) setMlmProfile(JSON.parse(profileData));
   }, []);
 
-  const selll = getSelType();
-  const achiever = mlmForm?.achiever || {};
-  const tab = mlmForm?.tab || "team";
-  const topuplineURLs = mlmProfile?.topuplineURLs || [];
-  const profileName = mlmForm?.promoter?.name
-    ? mlmForm?.promoter?.name
-    : mlmProfile?.fullName || "";
-  const profileMobile = mlmForm?.promoter?.name
-    ? mlmForm?.promoter?.mobile
-    : mlmProfile?.mobile || "";
-  const designation = mlmForm?.promoter?.name
-    ? mlmForm?.promoter?.role
-    : mlmProfile?.designation;
+  // ── Type flags ────────────────────────────────────────────────
+  const selll                  = getSelType();
+  const isRight                = selected?.position === "right";
+  const isSubGeneralType       = GENERAL_SELECT_TYPES.some((t) => t.value === selll?.type);
+  const isSubGeneralType_birthday = GENERAL_SELECT_TYPES_birthday.some((t) => t.value === selll?.type);
+  const isSubGeneralType_bonanza  = GENERAL_SELECT_TYPES_bonanza.some((t) => t.value === selll?.type);
 
-  // ── Hide achiever name/city for general template types ────────────
-  const isGeneralType = GENERAL_SELECT_TYPES.some(
-    (t) => t.value === selll?.type,
-  );
+  // ── Profile + sticker state (custom hook) ─────────────────────
+  const profileState = useProfileState({ isRight, isSubGeneralType_bonanza });
 
-  const [bgImage] = useImage(`${selected?.url || ""}`, "anonymous");
-  const [Imagefooter] = useImage(
-    "https://firebasestorage.googleapis.com/v0/b/mlmbooster.firebasestorage.app/o/graphics%2Flinks%2F1775306097021_qqhdl6.webp?alt=media&token=54d461df-8c6a-459d-be1d-505e7471ba50",
-    "anonymous",
-  );
-  const [Imaget1] = useImage(
-    "https://firebasestorage.googleapis.com/v0/b/mlmbooster.firebasestorage.app/o/graphics%2Flinks%2F1775306087385_281aww.webp?alt=media&token=9fd57ab6-07f3-4a1a-a4df-8c35a9224c46",
-    "anonymous",
-  );
+  // ── Toolbar positions (custom hook) ───────────────────────────
+  const { profileToolbar, stickerToolbar } = useToolbarPositions({
+    profileAttrs:       profileState.profileAttrs,
+    isProfileSelected:  profileState.isProfileSelected,
+    stickerAttrs:       profileState.stickerAttrs,
+    isStickerSelected:  profileState.isStickerSelected,
+  });
 
-  const [Imagel2] = useImage(mlmProfile?.logoURLs?.[0] || "", "anonymous");
-  const [Imagel3] = useImage(mlmProfile?.logoURLs?.[1] || "", "anonymous");
-  const [Imagel4] = useImage(mlmProfile?.logoURLs?.[2] || "", "anonymous");
+  // ── Stage deselect ────────────────────────────────────────────
+  const handleStageMouseDown = (e) => {
+    if (e.target === e.target.getStage()) profileState.deselectAll();
+  };
 
-  const [Imagetop1] = useImage(topuplineURLs?.[0] || "", "anonymous");
-  const [Imagetop2] = useImage(topuplineURLs?.[1] || "", "anonymous");
-  const [Imagetop3] = useImage(topuplineURLs?.[2] || "", "anonymous");
-  const [Imagetop4] = useImage(topuplineURLs?.[3] || "", "anonymous");
+  // ── Derived text ──────────────────────────────────────────────
+  const topuplineURLs  = mlmProfile?.topuplineURLs || [];
+  const achieverName   = mlmForm?.achiever?.name   || "ACHIEVER NAME";
+  const achieverCity   = mlmForm?.achiever?.city   || "ACHIEVER CITY";
+  const profileName    = mlmForm?.promoter?.name   ? mlmForm.promoter.name    : mlmProfile?.fullName    || "";
+  const profileMobile  = mlmForm?.promoter?.name   ? mlmForm.promoter.mobile  : mlmProfile?.mobile      || "";
+  const designation    = mlmForm?.promoter?.name   ? mlmForm.promoter.role    : mlmProfile?.designation;
 
+  const ActualProfilename = profileName?.toUpperCase()  || "PROFILENAME";
+  const ActualDesignation = designation?.toUpperCase()  || "DESIGNATION";
+  const ActualAchvrname   = achieverName?.toUpperCase() || "ACHIEVER NAME";
+  const ActualAchvrCity   = achieverCity?.toUpperCase() || "ACHIEVER CITY";
+
+  const ProfilefontSize     = calcFontSize(ActualProfilename, 10, 7, 6);
+  const DesignationfontSize = calcFontSize(ActualDesignation, 8, 6, 5);
+  const AchieverNamefontSize = calcFontSize(ActualAchvrname, 10, 8, 6);
+  const AchieverCityfontSize = calcFontSize(ActualAchvrCity, 6, 6, 5);
+
+  // ── Images ───────────────────────────────────────────────────
+  const [bgImage]      = useImage(selected?.url        || "url suggestionImage", "anonymous");
+  const [StckerImage]  = useImage(selected?.bannerId   || "",                    "anonymous");
+  const [Imagel2]      = useImage(mlmProfile?.logoURLs?.[0] || "",               "anonymous");
+  const [Imagel3]      = useImage(mlmProfile?.logoURLs?.[1] || "",               "anonymous");
+  const [Imagel4]      = useImage(mlmProfile?.logoURLs?.[2] || "",               "anonymous");
+  const [ImagetopFrame] = useImage(selectedTopFrame?.value || "",                "anonymous");
+  const [Imagetop1]    = useImage(topuplineURLs?.[0]   || "",                    "anonymous");
+  const [Imagetop2]    = useImage(topuplineURLs?.[1]   || "",                    "anonymous");
+  const [Imagetop3]    = useImage(topuplineURLs?.[2]   || "",                    "anonymous");
+  const [Imagetop4]    = useImage(topuplineURLs?.[3]   || "",                    "anonymous");
+  const [ImageForm]    = useImage(`${mlmForm?.achiever?.image}` || "",            "anonymous");
   const [ImageProfile] = useImage(
     mlmForm?.promoter?.name
-      ? `${mlmForm?.promoter?.image}`
-      : `${mlmProfile?.profileImageURLs[0]}`,
-    "anonymous",
+      ? `${mlmForm.promoter.image}`
+      : `${mlmProfile?.profileImageURLs?.[0]}`,
+    "anonymous"
   );
 
-  const downloadURI = (uri, name) => {
-    const link = document.createElement("a");
-    link.download = name;
-    link.href = uri;
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-  };
-
+  // ── Export ───────────────────────────────────────────────────
   const handleExport = () => {
-    const uri = stageRef.current.toDataURL({
-      pixelRatio: EXPORT_PIXEL_RATIO,
-      mimeType: "image/png",
-      quality: 1,
-    });
-    downloadURI(uri, "stage-hd.png");
+    profileState.deselectAll();
+    setTimeout(() => {
+      const uri = stageRef.current.toDataURL({
+        pixelRatio: EXPORT_PIXEL_RATIO,
+        mimeType: "image/png",
+        quality: 1,
+      });
+      const link = document.createElement("a");
+      link.download = "stage-hd.png";
+      link.href = uri;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    }, 50);
   };
 
-  const ActualProfilename = profileName?.toUpperCase() || "PROFILENAME";
-  const ActualDesignation = designation?.toUpperCase() || "DESIGNATION";
-
-  let ProfilefontSize = 9;
-
-  if (ActualProfilename?.length > 10 && ActualProfilename?.length <= 19) {
-    ProfilefontSize = 7;
-  } else if (ActualProfilename?.length > 19) {
-    ProfilefontSize = 5;
-  }
-
-  let DesignationfontSize = 7;
-
-  if (ActualDesignation?.length > 10 && ActualDesignation?.length <= 19) {
-    DesignationfontSize = 5;
-  } else if (ActualDesignation?.length > 19) {
-    DesignationfontSize = 4;
-  }
   return (
-    <div className="flex flex-col justify-start items-center h-screen">
-      <Stage
-        ref={stageRef}
-        width={STAGE_WIDTH}
-        height={STAGE_HEIGHT}
-        className="bg-slate-100 mt-2 shadow-lg"
+    <div className="flex flex-col justify-start items-center h-full">
+      <Button onClick={handleExport} className="mb-2">
+        Export
+      </Button>
+
+      <div
+        ref={stageContainerRef}
+        className="relative mt-2"
+        style={{ width: STAGE_WIDTH, height: STAGE_HEIGHT }}
       >
-        <Layer>
-          <Image
-            image={bgImage}
-            x={0}
-            y={0}
-            width={STAGE_WIDTH}
-            height={STAGE_HEIGHT}
+        {/* Flip toolbars (uncomment to enable) */}
+        {/* {profileState.isProfileSelected && (
+          <FlipToolbar
+            top={profileToolbar.top}
+            left={profileToolbar.left}
+            onFlip={profileState.handleFlip}
           />
+        )} */}
+        {/* {profileState.isStickerSelected && (
+          <FlipToolbar
+            top={stickerToolbar.top}
+            left={stickerToolbar.left}
+            onFlip={profileState.handleStickerFlip}
+            title="Flip sticker horizontal"
+          />
+        )} */}
 
-          <Image image={Imagel2} x={3} y={2} width={25} height={25} />
-          <Image image={Imagel3} x={260} y={2} width={25} height={25} />
-          <Image image={Imagel4} x={290} y={2} width={25} height={25} />
+        <KonvaCanvas
+          stageRef={stageRef}
+          // Images
+          bgImage={bgImage}
+          StckerImage={StckerImage}
+          Imagel2={Imagel2}
+          Imagel3={Imagel3}
+          Imagel4={Imagel4}
+          ImagetopFrame={ImagetopFrame}
+          Imagetop1={Imagetop1}
+          Imagetop2={Imagetop2}
+          Imagetop3={Imagetop3}
+          Imagetop4={Imagetop4}
+          ImageForm={ImageForm}
+          ImageProfile={ImageProfile}
+          // Profile
+          profileImageRef={profileState.profileImageRef}
+          profileAttrs={profileState.profileAttrs}
+          handleProfileClick={profileState.handleProfileClick}
+          handleDragMove={profileState.handleDragMove}
+          handleDragEnd={profileState.handleDragEnd}
+          handleTransformEnd={profileState.handleTransformEnd}
+          transformerRef={profileState.transformerRef}
+          // Sticker
+          stickerImageRef={profileState.stickerImageRef}
+          stickerAttrs={profileState.stickerAttrs}
+          handleStickerClick={profileState.handleStickerClick}
+          handleStickerDragMove={profileState.handleStickerDragMove}
+          handleStickerDragEnd={profileState.handleStickerDragEnd}
+          handleStickerTransformEnd={profileState.handleStickerTransformEnd}
+          stickerTransformerRef={profileState.stickerTransformerRef}
+          // Stage
+          handleStageMouseDown={handleStageMouseDown}
+          // Text
+          profileMobile={profileMobile}
+          ActualProfilename={ActualProfilename}
+          ActualDesignation={ActualDesignation}
+          ActualAchvrname={ActualAchvrname}
+          ActualAchvrCity={ActualAchvrCity}
+          ProfilefontSize={ProfilefontSize}
+          DesignationfontSize={DesignationfontSize}
+          AchieverNamefontSize={AchieverNamefontSize}
+          AchieverCityfontSize={AchieverCityfontSize}
+          // Flags
+          isRight={isRight}
+          isSubGeneralType={isSubGeneralType}
+          isSubGeneralType_birthday={isSubGeneralType_birthday}
+          // Modals
+          setIsOpen={setIsOpen}
+          setIsOpenFtr={setIsOpenFtr}
+        />
+      </div>
 
-          <Image image={Imagetop1} x={100} y={2} width={25} height={25} />
-          <Image image={Imagetop2} x={130} y={2} width={25} height={25} />
-          <Image image={Imagetop3} x={160} y={2} width={25} height={25} />
-          <Image image={Imagetop4} x={190} y={2} width={25} height={25} />
-
-          {isGeneralType ? null : (
-            <Image image={Imagefooter} x={0} y={280} width={350} height={41} />
-          )}
-
-          {selected?.position === "right" ? (
-            <>
-              {/* Achiever name/city hidden for general types */}
-              {!isGeneralType && (
-                <>
-                  <Text
-                    x={55}
-                    y={87}
-                    width={150}
-                    height={20}
-                    text={achiever.name || "Chaitnya Chaudhari"}
-                    fontSize={12}
-                    fill="white"
-                    fontStyle="bold"
-                    verticalAlign="middle"
-                  />
-                  <Text
-                    x={99}
-                    y={106}
-                    width={100}
-                    height={20}
-                    text={achiever.city || "Pune"}
-                    fontSize={10}
-                    fill="white"
-                    fontStyle="bold"
-                    verticalAlign="middle"
-                  />
-                </>
-              )}
-
-              <Text
-                x={43}
-                y={294}
-                width={150}
-                height={5}
-                text="CALL FOR ASSOCIATION"
-                fontSize={7}
-                fill="white"
-                fontStyle="bold"
-                verticalAlign="middle"
-              />
-              <Text
-                x={39}
-                y={296}
-                width={150}
-                height={20}
-                text={`+91${profileMobile}` || "+91XXXXXXXXXX"}
-                fontSize={12}
-                fill="white"
-                fontStyle="bold"
-                verticalAlign="middle"
-              />
-              <Text
-                x={160}
-                y={287}
-                width={120}
-                height={20}
-                text={ActualProfilename}
-                fontSize={ProfilefontSize}
-                fill="white"
-                fontStyle="bold"
-                verticalAlign="middle"
-              />
-              <Text
-                x={145}
-                y={303}
-                width={110}
-                height={5}
-                text={ActualDesignation}
-                fontSize={DesignationfontSize}
-                fill="white"
-                fontStyle="bold"
-                verticalAlign="middle"
-              />
-              {/* <Text
-                x={150}
-                y={308}
-                width={110}
-                height={10}
-                text="social"
-                fontSize={8}
-                fill="white"
-                fontStyle="bold"
-                verticalAlign="middle"
-              /> */}
-
-              {isGeneralType ? (
-                <Image
-                  image={ImageProfile}
-                  x={-1}
-                  y={55}
-                  width={180}
-                  height={230}
-                />
-              ) : (
-                <Image
-                  image={ImageProfile}
-                  x={231}
-                  y={220}
-                  width={100}
-                  height={100}
-                />
-              )}
-            </>
-          ) : (
-            <>
-              {/* Achiever name/city hidden for general types */}
-              {!isGeneralType && (
-                <>
-                  <Text
-                    x={180}
-                    y={87}
-                    width={150}
-                    height={20}
-                    text={achiever.name || "Chaitnya Chaudhari"}
-                    fontSize={12}
-                    fill="white"
-                    fontStyle="bold"
-                    verticalAlign="middle"
-                  />
-                  <Text
-                    x={190}
-                    y={106}
-                    width={100}
-                    height={20}
-                    text={achiever.city || "Pune"}
-                    fontSize={10}
-                    fill="white"
-                    fontStyle="bold"
-                    verticalAlign="middle"
-                  />
-                </>
-              )}
-
-              <Text
-                x={43}
-                y={294}
-                width={150}
-                height={5}
-                text="CALL FOR ASSOCIATION"
-                fontSize={7}
-                fill="white"
-                fontStyle="bold"
-                verticalAlign="middle"
-              />
-              <Text
-                x={39}
-                y={296}
-                width={150}
-                height={20}
-                text={`+91${profileMobile}` || "+91XXXXXXXXXX"}
-                fontSize={12}
-                fill="white"
-                fontStyle="bold"
-                verticalAlign="middle"
-              />
-              <Text
-                x={140}
-                y={286}
-                width={100}
-                height={20}
-                text={ActualProfilename}
-                fontSize={ProfilefontSize}
-                fill="white"
-                fontStyle="bold"
-                align="center"
-                verticalAlign="middle"
-              />
-              <Text
-                x={145}
-                y={303}
-                width={100}
-                height={5}
-                text={ActualDesignation}
-                fontSize={DesignationfontSize}
-                fill="white"
-                fontStyle="bold"
-                align="center"
-                verticalAlign="middle"
-              />
-              {/* <Text
-                x={150}
-                y={308}
-                width={110}
-                height={10}
-                text="social"
-                fontSize={8}
-                fill="white"
-                fontStyle="bold"
-                verticalAlign="middle"
-              /> */}
-
-              {isGeneralType ? (
-                <Image
-                  image={ImageProfile}
-                  x={140}
-                  y={55}
-                  width={180}
-                  height={230}
-                />
-              ) : (
-                <Image
-                  image={ImageProfile}
-                  x={231}
-                  y={220}
-                  width={100}
-                  height={100}
-                />
-              )}
-            </>
-          )}
-
-          {isGeneralType ? (
-            <Image image={Imagefooter} x={0} y={280} width={350} height={41} />
-          ) : null}
-        </Layer>
-      </Stage>
       <ListOfTemplates selected={selected} setSelected={setSelected} />
     </div>
   );
