@@ -7,7 +7,7 @@ import {
   Person,
   LogoMicrosoftOffice,
   Sack,
-  SignOut,
+  ArrowChevronRight
 } from "@gravity-ui/icons";
 import { useNavigate } from "react-router";
 import logo from "../../public/mlmboo2.ico";
@@ -30,7 +30,7 @@ const NAV_ITEMS = [
 
 const BOTTOM_ITEMS = [
   //   { icon: Hand, label: "Settings", id: "settings" },
-  { icon: SignOut, label: "Logout", id: "logout", link: "/logout" },
+  { icon: ArrowChevronRight, label: "Logout", id: "logout", link: "/logout" },
 ];
 
 export default function Sidebar({ collapsed, setCollapsed, mobileOpen, setMobileOpen, active, setActive }) {
