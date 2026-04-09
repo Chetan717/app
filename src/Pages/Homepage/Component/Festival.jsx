@@ -2,30 +2,33 @@ import { useState, useRef, useEffect } from "react";
 import { Festival_template } from "./Services/Festival_template";
 import { useGeneralData } from "../../.././Context/GeneralContext";
 import "./stylec.css";
+import { useNavigate } from "react-router";
 export default function Festival() {
   const sliderRef = useRef(null);
   const dates = generateDates();
   const { theme, toggleTheme, theame_color } = useGeneralData();
   const [selectedDate, setSelectedDate] = useState(dates[0].iso);
   const [festivaltempdata, setFestivalTempData] = useState([]);
-
+  const [selectedTemp, setSelectedTemp] = useState(null);
+  const { selType, setSelType } = useGeneralData();
   useEffect(() => {
     loadFestival(selectedDate);
   }, [selectedDate]);
 
- // In Festival.jsx
-const { cachedFestivalData, setCachedFestivalData } = useGeneralData();
+  const navigate = useNavigate();
+  // In Festival.jsx
+  const { cachedFestivalData, setCachedFestivalData } = useGeneralData();
 
-const loadFestival = async (date) => {
-  // ✅ Return early if already cached
-  if (cachedFestivalData[date]) {
-    setFestivalTempData(cachedFestivalData[date]);
-    return;
-  }
-  const data = await Festival_template(date);
-  setCachedFestivalData(prev => ({ ...prev, [date]: data }));
-  setFestivalTempData(data);
-};
+  const loadFestival = async (date) => {
+    // ✅ Return early if already cached
+    if (cachedFestivalData[date]) {
+      setFestivalTempData(cachedFestivalData[date]);
+      return;
+    }
+    const data = await Festival_template(date);
+    setCachedFestivalData((prev) => ({ ...prev, [date]: data }));
+    setFestivalTempData(data);
+  };
 
   const scroll = (dir) => {
     if (sliderRef.current) {
@@ -33,13 +36,22 @@ const loadFestival = async (date) => {
     }
   };
 
+  const handleImagePress = (item) => {
+    setSelectedTemp(item);
+    const selttype = {
+      id: item.id,
+      type: item.type,
+      serial: item.serial,
+      ShowCaseForm: item.ShowCaseForm,
+    };
+    setSelType(selttype);
+    navigate("/alltemp");
+  };
   return (
     <div className="flex flex-col gap-3 justify-center items-center h-full  p-2  w-full">
       {/* DATE SELECTOR */}
       <div className="flex items-center w-full gap-1s">
-        <button
-          className="flex items-center justify-center w-7 h-7 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors duration-200 flex-shrink-0"
-        >
+        <button className="flex items-center justify-center w-7 h-7 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors duration-200 flex-shrink-0">
           <svg
             xmlns="http://www.w3.org/2000/svg"
             className="w-5 h-5"
@@ -114,6 +126,7 @@ const loadFestival = async (date) => {
               >
                 <img
                   src={card.image}
+                  onClick={() => handleImagePress(card)}
                   alt="festival"
                   className="w-full h-full object-cover"
                   loading="lazy"

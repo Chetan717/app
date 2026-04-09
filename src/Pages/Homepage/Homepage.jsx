@@ -4,15 +4,17 @@ import ListOfGenaraltemp from "./Component/ListOfGenaraltemp";
 import React, { useEffect, useState, useRef, useCallback } from "react";
 import { fetchGeneralTemplates } from "./Component/Services/GeneralTemplateService";
 import MLMProfileModal from "../Form/Mlmprofilemodal";
-
+import { useNavigate } from "react-router";
 const TOTAL_GROUPS = 4;
 
 function Homepage() {
   const [templates, setTemplates] = useState([]);
   const [groupIndex, setGroupIndex] = useState(0);
   const [loading, setLoading] = useState(false);
+
   const loadingRef = useRef(false);
   const groupIndexRef = useRef(0);
+  const navigate = useNavigate();
 
   const loadTemplates = useCallback(async () => {
     if (loadingRef.current || groupIndexRef.current >= TOTAL_GROUPS) return;

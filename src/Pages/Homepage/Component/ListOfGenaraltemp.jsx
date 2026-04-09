@@ -4,8 +4,8 @@ import { useNavigate } from "react-router";
 
 function ListOfGenaraltemp({ templates, loading }) {
   const [selectedTemp, setSelectedTemp] = useState(null);
-  const { selType, setSelType } = useGeneralData();
   const navigate = useNavigate();
+  const { selType, setSelType } = useGeneralData();
 
   const handleImagePress = (item) => {
     setSelectedTemp(item);
