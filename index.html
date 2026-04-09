@@ -7,16 +7,17 @@
     <title>MLMBOOSTER</title>
     <script>
       window.addEventListener('load', function() {
-        // Push initial state to ensure there's history
-        window.history.pushState({page: 'app'}, '', window.location.pathname);
+        // Push multiple states to ensure there's always history
+        window.history.pushState({page: 'app1'}, '', window.location.pathname);
+        window.history.pushState({page: 'app2'}, '', window.location.pathname);
       });
 
-      window.addEventListener('popstate', function(event) {
+      window.onpopstate = function(event) {
         // Dispatch custom event to React app
         window.dispatchEvent(new CustomEvent('webviewBackPressed'));
-        // Push state back to prevent immediate exit
+        // Push state back to maintain history and prevent exit
         window.history.pushState({page: 'app'}, '', window.location.pathname);
-      });
+      };
     </script>
   </head>
   <body>
