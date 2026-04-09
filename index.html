@@ -6,18 +6,18 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>MLMBOOSTER</title>
     <script>
-      window.addEventListener('load', function() {
-        // Push multiple states to ensure there's always history
-        window.history.pushState({page: 'app1'}, '', window.location.pathname);
-        window.history.pushState({page: 'app2'}, '', window.location.pathname);
-      });
+      // window.addEventListener('load', function() {
+      //   // Push multiple states to ensure there's always history
+      //   window.history.pushState({page: 'app1'}, '', window.location.pathname);
+      //   window.history.pushState({page: 'app2'}, '', window.location.pathname);
+      // });
 
-      window.onpopstate = function(event) {
-        // Dispatch custom event to React app
-        window.dispatchEvent(new CustomEvent('webviewBackPressed'));
-        // Push state back to maintain history and prevent exit
-        window.history.pushState({page: 'app'}, '', window.location.pathname);
-      };
+      // window.onpopstate = function(event) {
+      //   // Dispatch custom event to React app
+      //   window.dispatchEvent(new CustomEvent('webviewBackPressed'));
+      //   // Push state back to maintain history and prevent exit
+      //   window.history.pushState({page: 'app'}, '', window.location.pathname);
+      // };
     </script>
   </head>
   <body>

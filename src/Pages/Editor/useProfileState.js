@@ -18,10 +18,10 @@ export function useProfileState({ isRight, isSubGeneralType_bonanza }) {
 
   // ── Position / size state ──────────────────────────────────────
   const [profileAttrs, setProfileAttrs] = useState({
-    x: isRight && isSubGeneralType_bonanza ? 210 : 110,
+    x: isRight && isSubGeneralType_bonanza ? 210 : 111,
     y: isRight && isSubGeneralType_bonanza ? 30 : 30,
-    width: 110,
-    height: 180,
+    width: 115,
+    height: 175,
     scaleX: isRight ? 1 : -1,
     offsetX: 0,
   });
@@ -39,10 +39,10 @@ export function useProfileState({ isRight, isSubGeneralType_bonanza }) {
   useEffect(() => {
     setProfileAttrs((prev) => ({
       ...prev,
-      x: isRight && isSubGeneralType_bonanza ? 210 : 110,
+      x: isRight && isSubGeneralType_bonanza ? 210 : 111,
       y: 30,
-      width: 110,
-      height: 180,
+      width: 115,
+      height: 185,
       scaleX: isRight ? 1 : -1,
       offsetX: 0,
     }));
@@ -60,13 +60,17 @@ export function useProfileState({ isRight, isSubGeneralType_bonanza }) {
   // ── Transformer attach / detach ────────────────────────────────
   useEffect(() => {
     if (!transformerRef.current || !profileImageRef.current) return;
-    transformerRef.current.nodes(isProfileSelected ? [profileImageRef.current] : []);
+    transformerRef.current.nodes(
+      isProfileSelected ? [profileImageRef.current] : [],
+    );
     transformerRef.current.getLayer()?.batchDraw();
   }, [isProfileSelected]);
 
   useEffect(() => {
     if (!stickerTransformerRef.current || !stickerImageRef.current) return;
-    stickerTransformerRef.current.nodes(isStickerSelected ? [stickerImageRef.current] : []);
+    stickerTransformerRef.current.nodes(
+      isStickerSelected ? [stickerImageRef.current] : [],
+    );
     stickerTransformerRef.current.getLayer()?.batchDraw();
   }, [isStickerSelected]);
 
@@ -80,7 +84,11 @@ export function useProfileState({ isRight, isSubGeneralType_bonanza }) {
     e.stopPropagation();
     setProfileAttrs((prev) => {
       const isFlipped = prev.scaleX === -1;
-      return { ...prev, scaleX: isFlipped ? 1 : -1, offsetX: isFlipped ? 0 : prev.width };
+      return {
+        ...prev,
+        scaleX: isFlipped ? 1 : -1,
+        offsetX: isFlipped ? 0 : prev.width,
+      };
     });
   };
 
@@ -128,7 +136,11 @@ export function useProfileState({ isRight, isSubGeneralType_bonanza }) {
     e.stopPropagation();
     setStickerAttrs((prev) => {
       const isFlipped = prev.scaleX === -1;
-      return { ...prev, scaleX: isFlipped ? 1 : -1, offsetX: isFlipped ? 0 : prev.width };
+      return {
+        ...prev,
+        scaleX: isFlipped ? 1 : -1,
+        offsetX: isFlipped ? 0 : prev.width,
+      };
     });
   };
 

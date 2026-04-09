@@ -39,7 +39,7 @@ function MlmEditPage({
   setIsOpenFtr,
   isOpen,
   setIsOpen,
-  selectedFooterFrame,
+  selectedFooterFrame
 }) {
   const stageRef = useRef(null);
   const stageContainerRef = useRef(null);
@@ -50,28 +50,34 @@ function MlmEditPage({
   const [selected, setSelected] = useState(null);
 
   useEffect(() => {
-    const formData    = localStorage.getItem("mlmform");
+    const formData = localStorage.getItem("mlmform");
     const profileData = localStorage.getItem("mlmProfile");
-    if (formData)    setMlmForm(JSON.parse(formData));
+    if (formData) setMlmForm(JSON.parse(formData));
     if (profileData) setMlmProfile(JSON.parse(profileData));
   }, []);
 
   // ── Type flags ────────────────────────────────────────────────
-  const selll                  = getSelType();
-  const isRight                = selected?.position === "right";
-  const isSubGeneralType       = GENERAL_SELECT_TYPES.some((t) => t.value === selll?.type);
-  const isSubGeneralType_birthday = GENERAL_SELECT_TYPES_birthday.some((t) => t.value === selll?.type);
-  const isSubGeneralType_bonanza  = GENERAL_SELECT_TYPES_bonanza.some((t) => t.value === selll?.type);
+  const selll = getSelType();
+  const isRight = selected?.position === "right";
+  const isSubGeneralType = GENERAL_SELECT_TYPES.some(
+    (t) => t.value === selll?.type,
+  );
+  const isSubGeneralType_birthday = GENERAL_SELECT_TYPES_birthday.some(
+    (t) => t.value === selll?.type,
+  );
+  const isSubGeneralType_bonanza = GENERAL_SELECT_TYPES_bonanza.some(
+    (t) => t.value === selll?.type,
+  );
 
   // ── Profile + sticker state (custom hook) ─────────────────────
   const profileState = useProfileState({ isRight, isSubGeneralType_bonanza });
 
   // ── Toolbar positions (custom hook) ───────────────────────────
   const { profileToolbar, stickerToolbar } = useToolbarPositions({
-    profileAttrs:       profileState.profileAttrs,
-    isProfileSelected:  profileState.isProfileSelected,
-    stickerAttrs:       profileState.stickerAttrs,
-    isStickerSelected:  profileState.isStickerSelected,
+    profileAttrs: profileState.profileAttrs,
+    isProfileSelected: profileState.isProfileSelected,
+    stickerAttrs: profileState.stickerAttrs,
+    isStickerSelected: profileState.isStickerSelected,
   });
 
   // ── Stage deselect ────────────────────────────────────────────
@@ -80,40 +86,52 @@ function MlmEditPage({
   };
 
   // ── Derived text ──────────────────────────────────────────────
-  const topuplineURLs  = mlmProfile?.topuplineURLs || [];
-  const achieverName   = mlmForm?.achiever?.name   || "ACHIEVER NAME";
-  const achieverCity   = mlmForm?.achiever?.city   || "ACHIEVER CITY";
-  const profileName    = mlmForm?.promoter?.name   ? mlmForm.promoter.name    : mlmProfile?.fullName    || "";
-  const profileMobile  = mlmForm?.promoter?.name   ? mlmForm.promoter.mobile  : mlmProfile?.mobile      || "";
-  const designation    = mlmForm?.promoter?.name   ? mlmForm.promoter.role    : mlmProfile?.designation;
+  const topuplineURLs = mlmProfile?.topuplineURLs || [];
+  const achieverName = mlmForm?.achiever?.name || "ACHIEVER NAME";
+  const achieverCity = mlmForm?.achiever?.city || "ACHIEVER CITY";
+  const profileName = mlmForm?.promoter?.name
+    ? mlmForm.promoter.name
+    : mlmProfile?.fullName || "";
+  const profileMobile = mlmForm?.promoter?.name
+    ? mlmForm.promoter.mobile
+    : mlmProfile?.mobile || "";
+  const designation = mlmForm?.promoter?.name
+    ? mlmForm.promoter.role
+    : mlmProfile?.designation;
 
-  const ActualProfilename = profileName?.toUpperCase()  || "PROFILENAME";
-  const ActualDesignation = designation?.toUpperCase()  || "DESIGNATION";
-  const ActualAchvrname   = achieverName?.toUpperCase() || "ACHIEVER NAME";
-  const ActualAchvrCity   = achieverCity?.toUpperCase() || "ACHIEVER CITY";
+  const ActualProfilename = profileName?.toUpperCase() || "PROFILENAME";
+  const ActualDesignation = designation?.toUpperCase() || "DESIGNATION";
+  const ActualAchvrname = achieverName?.toUpperCase() || "ACHIEVER NAME";
+  const ActualAchvrCity = achieverCity?.toUpperCase() || "ACHIEVER CITY";
 
-  const ProfilefontSize     = calcFontSize(ActualProfilename, 10, 7, 6);
+  const ProfilefontSize = calcFontSize(ActualProfilename, 10, 7, 6);
   const DesignationfontSize = calcFontSize(ActualDesignation, 8, 6, 5);
   const AchieverNamefontSize = calcFontSize(ActualAchvrname, 10, 8, 6);
   const AchieverCityfontSize = calcFontSize(ActualAchvrCity, 6, 6, 5);
 
   // ── Images ───────────────────────────────────────────────────
-  const [bgImage]      = useImage(selected?.url        || "url suggestionImage", "anonymous");
-  const [StckerImage]  = useImage(selected?.bannerId   || "",                    "anonymous");
-  const [Imagel2]      = useImage(mlmProfile?.logoURLs?.[0] || "",               "anonymous");
-  const [Imagel3]      = useImage(mlmProfile?.logoURLs?.[1] || "",               "anonymous");
-  const [Imagel4]      = useImage(mlmProfile?.logoURLs?.[2] || "",               "anonymous");
-  const [ImagetopFrame] = useImage(selectedTopFrame?.value || "",                "anonymous");
-  const [Imagetop1]    = useImage(topuplineURLs?.[0]   || "",                    "anonymous");
-  const [Imagetop2]    = useImage(topuplineURLs?.[1]   || "",                    "anonymous");
-  const [Imagetop3]    = useImage(topuplineURLs?.[2]   || "",                    "anonymous");
-  const [Imagetop4]    = useImage(topuplineURLs?.[3]   || "",                    "anonymous");
-  const [ImageForm]    = useImage(`${mlmForm?.achiever?.image}` || "",            "anonymous");
+  const [bgImage] = useImage(
+    selected?.url || "url suggestionImage",
+    "anonymous",
+  );
+  const [StckerImage] = useImage(selected?.bannerId || "", "anonymous");
+  const [Imagel2] = useImage(mlmProfile?.logoURLs?.[0] || "", "anonymous");
+  const [Imagel3] = useImage(mlmProfile?.logoURLs?.[1] || "", "anonymous");
+  const [Imagel4] = useImage(mlmProfile?.logoURLs?.[2] || "", "anonymous");
+  const [ImagetopFrame] = useImage(selectedTopFrame?.value || "", "anonymous");
+  const [Imagetop1] = useImage(topuplineURLs?.[0] || "", "anonymous");
+  const [Imagetop2] = useImage(topuplineURLs?.[1] || "", "anonymous");
+  const [Imagetop3] = useImage(topuplineURLs?.[2] || "", "anonymous");
+  const [Imagetop4] = useImage(topuplineURLs?.[3] || "", "anonymous");
+  const [ImageForm] = useImage(
+    `${mlmForm?.achiever?.image}` || "",
+    "anonymous",
+  );
   const [ImageProfile] = useImage(
     mlmForm?.promoter?.name
       ? `${mlmForm.promoter.image}`
       : `${mlmProfile?.profileImageURLs?.[0]}`,
-    "anonymous"
+    "anonymous",
   );
 
   // ── Export ───────────────────────────────────────────────────
@@ -209,6 +227,7 @@ function MlmEditPage({
           isRight={isRight}
           isSubGeneralType={isSubGeneralType}
           isSubGeneralType_birthday={isSubGeneralType_birthday}
+          isSubGeneralType_bonanza={isSubGeneralType_bonanza}
           // Modals
           setIsOpen={setIsOpen}
           setIsOpenFtr={setIsOpenFtr}

@@ -1,5 +1,20 @@
+import { useState, useEffect } from "react";
 import { Moon, Sun, ListUl } from "@gravity-ui/icons";
 import { useGeneralData } from "../Context/GeneralContext";
+
+// ── Read localStorage once at module level (outside component) ──
+// This runs synchronously before the first render, so data is
+// available immediately — no blank flash, no need for a refresh.
+function getStoredHeaderData() {
+  const selectedCompany = JSON.parse(localStorage.getItem("selectedCompany") || "{}");
+  const mlmProfile      = JSON.parse(localStorage.getItem("mlmProfile")      || "{}");
+  const userMlm         = JSON.parse(localStorage.getItem("usermlm")         || "{}");
+
+  return {
+    companyLogo: selectedCompany?.logos?.[0]?.link || null,
+    userName:    mlmProfile?.name || userMlm?.name || "",
+  };
+}
 
 export default function Header({
   collapsed,
@@ -12,12 +27,14 @@ export default function Header({
   const { theme, toggleTheme } = useGeneralData();
   const isDark = theme === "dark";
 
-  // ✅ Parse localStorage data safely
-  const selectedCompany = JSON.parse(localStorage.getItem("selectedCompany") || "{}");
-  const userMlm = JSON.parse(localStorage.getItem("usermlm") || "{}");
+  const [companyLogo, setCompanyLogo] = useState(() => getStoredHeaderData().companyLogo);
+  const [userName, setUserName]       = useState(() => getStoredHeaderData().userName);
 
-  const companyLogo = selectedCompany?.logos?.[0]?.link;
-  const userName = userMlm?.name;
+  useEffect(() => {
+    const { companyLogo: logo, userName: name } = getStoredHeaderData();
+    setCompanyLogo(logo);
+    setUserName(name);
+  }, []);
 
   const handleMenuClick = () => {
     if (window.innerWidth < 768) {
@@ -36,10 +53,10 @@ export default function Header({
         aria-label="Toggle sidebar"
         className="w-9 h-9 flex items-center justify-center rounded-xl text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors flex-shrink-0"
       >
-        <ListUl className="w-5 h-5"/>
+        <ListUl className="w-5 h-5" />
       </button>
 
-      {/* ✅ Company logo + user name — visible only on mobile (md:hidden) */}
+      {/* Company logo + user name — mobile only */}
       <div className="flex items-center gap-2 md:hidden">
         {companyLogo ? (
           <img
@@ -48,38 +65,10 @@ export default function Header({
             className="w-8 h-8 rounded-lg object-contain"
           />
         ) : (
-          <div className="w-7 h-7 rounded-lg bg-gray-200 dark:bg-gray-700 flex items-center justify-center text-xs font-bold text-gray-500">
-
-          </div>
+          <div className="w-7 h-7 rounded-lg bg-gray-200 dark:bg-gray-700 flex items-center justify-center text-xs font-bold text-gray-500" />
         )}
         {userName && (
-          <span className="text-sm capitalize font-semibold text-gray-800 dark:text-gray-100 whitespace-nowrap max-w-[120px] ">
-            {userName}
-          </span>
-        )}
-      </div>
-
-      {/* Page title — hidden on mobile since we show logo+name instead */}
-      {/* <h1
-        className="hidden md:block text-base font-semibold text-gray-800 dark:text-gray-100 capitalize select-none"
-        style={{ fontFamily: "'Syne', sans-serif" }}
-      >
-        {activeLabel}
-      </h1> */}
-      <div className="flex lg:block hidden md:hidden items-center gap-2 ">
-        {/* {companyLogo ? (
-          <img
-            src={companyLogo}
-            alt="Company Logo"
-            className="w-8 h-8 rounded-lg object-contain"
-          />
-        ) : (
-          <div className="w-7 h-7 rounded-lg bg-gray-200 dark:bg-gray-700 flex items-center justify-center text-xs font-bold text-gray-500">
-            
-          </div>
-        )} */}
-        {userName && (
-          <span className="text-sm capitalize font-semibold text-gray-800 dark:text-gray-100 whitespace-nowrap max-w-[120px] ">
+          <span className="text-sm capitalize font-semibold text-gray-800 dark:text-gray-100 whitespace-nowrap max-w-[120px]">
             {userName}
           </span>
         )}
@@ -101,7 +90,6 @@ export default function Header({
 
         <button className="flex items-center gap-2 pl-2 pr-2.5 py-1 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors group">
           <div className="w-7 h-7 rounded-lg bg-[#0e245c] flex items-center justify-center text-white font-bold text-xs flex-shrink-0">
-            {/* ✅ Show first letter of user name */}
             {userName?.[0]?.toUpperCase() || "A"}
           </div>
         </button>

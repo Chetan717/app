@@ -44,22 +44,22 @@ function GeneralEditPage({
     (t) => t.value === selll?.type,
   );
   const [profileAttrs, setProfileAttrs] = useState({
-    x: isRight ? -1 : 140,
-    y: 55,
-    width: 180,
-    height: 230,
-    scaleX: 1,
+    x: isRight ? 155 : 165,
+    y: 80,
+    width: 160,
+    height: 210,
+    scaleX: isRight ? -1 : 1,
     offsetX: 0,
   });
 
   useEffect(() => {
     setProfileAttrs((prev) => ({
       ...prev,
-      x: isRight ? -1 : 140,
-      y: 60,
-      width: 180,
-      height: 230,
-      scaleX: 1,
+      x: isRight ? 155 : 165,
+      y: 80,
+      width: 160,
+      height: 210,
+      scaleX: isRight ? -1 : 1,
       offsetX: 0,
     }));
   }, [isRight]);
@@ -201,11 +201,8 @@ function GeneralEditPage({
   const handleTransformEnd = () => {
     const node = profileImageRef.current;
     if (!node) return;
-
-    const absScaleX = Math.abs(node.scaleX());
-    const absScaleY = Math.abs(node.scaleY());
-    const newWidth = Math.max(20, node.width() * absScaleX);
-    const newHeight = Math.max(20, node.height() * absScaleY);
+    const newWidth = Math.max(20, node.width() * Math.abs(node.scaleX()));
+    const newHeight = Math.max(20, node.height() * Math.abs(node.scaleY()));
     const isFlipped = profileAttrs.scaleX === -1;
 
     node.scaleX(isFlipped ? -1 : 1);
@@ -406,11 +403,11 @@ function GeneralEditPage({
                 scaleX={profileAttrs.scaleX}
                 offsetX={profileAttrs.offsetX}
                 draggable
-                onClick={handleProfileClick}
-                onTap={handleProfileClick}
-                onDragMove={handleDragMove}
-                onDragEnd={handleDragEnd}
-                onTransformEnd={handleTransformEnd}
+                // onClick={handleProfileClick}
+                // onTap={handleProfileClick}
+                // onDragMove={handleDragMove}
+                // onDragEnd={handleDragEnd}
+                // onTransformEnd={handleTransformEnd}
               />
             ) : null}
 
@@ -558,17 +555,18 @@ function GeneralEditPage({
             {isSubGeneralType ? null : isRight ? (
               <Image
                 image={ImageProfile}
-                x={-1}
+                x={69}
                 y={230}
-                width={80}
+                scaleX={-1}
+                width={70}
                 height={90}
               />
             ) : (
               <Image
                 image={ImageProfile}
-                x={240}
+                x={251}
                 y={230}
-                width={80}
+                width={70}
                 height={90}
               />
             )}

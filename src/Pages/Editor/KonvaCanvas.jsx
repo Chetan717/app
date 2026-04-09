@@ -56,6 +56,7 @@ function KonvaCanvas({
   isRight,
   isSubGeneralType,
   isSubGeneralType_birthday,
+  isSubGeneralType_bonanza,
   // Modal triggers
   setIsOpen,
   setIsOpenFtr,
@@ -66,8 +67,16 @@ function KonvaCanvas({
       ...newBox,
       x: clamp(newBox.x, 0, STAGE_WIDTH - newBox.width),
       y: clamp(newBox.y, 0, STAGE_HEIGHT - newBox.height),
-      width: clamp(newBox.width, 20, STAGE_WIDTH - clamp(newBox.x, 0, STAGE_WIDTH)),
-      height: clamp(newBox.height, 20, STAGE_HEIGHT - clamp(newBox.y, 0, STAGE_HEIGHT)),
+      width: clamp(
+        newBox.width,
+        20,
+        STAGE_WIDTH - clamp(newBox.x, 0, STAGE_WIDTH),
+      ),
+      height: clamp(
+        newBox.height,
+        20,
+        STAGE_HEIGHT - clamp(newBox.y, 0, STAGE_HEIGHT),
+      ),
     };
   };
 
@@ -82,24 +91,62 @@ function KonvaCanvas({
     >
       <Layer>
         {/* Background */}
-        <Image image={bgImage} x={0} y={0} width={STAGE_WIDTH} height={STAGE_HEIGHT} />
+        <Image
+          image={bgImage}
+          x={0}
+          y={0}
+          width={STAGE_WIDTH}
+          height={STAGE_HEIGHT}
+        />
 
         {/* Logos */}
-        <Image image={Imagel2} x={3}   y={2} width={25} height={25} />
+        <Image image={Imagel2} x={3} y={2} width={25} height={25} />
         <Image image={Imagel3} x={260} y={2} width={25} height={25} />
         <Image image={Imagel4} x={290} y={2} width={25} height={25} />
 
         {/* Top frames */}
-        <Image image={ImagetopFrame} x={95}  y={2} width={30} height={30} />
+        <Image image={ImagetopFrame} x={95} y={2} width={30} height={30} />
         <Image image={ImagetopFrame} x={125} y={2} width={30} height={30} />
         <Image image={ImagetopFrame} x={155} y={2} width={30} height={30} />
         <Image image={ImagetopFrame} x={185} y={2} width={30} height={30} />
 
         {/* Top-line profile images */}
-        <Image image={Imagetop1} x={101} y={6} width={18} height={18} onTap={() => setIsOpen(true)} onClick={() => setIsOpen(true)} />
-        <Image image={Imagetop2} x={131} y={6} width={18} height={18} onTap={() => setIsOpen(true)} onClick={() => setIsOpen(true)} />
-        <Image image={Imagetop3} x={161} y={6} width={18} height={18} onTap={() => setIsOpen(true)} onClick={() => setIsOpen(true)} />
-        <Image image={Imagetop4} x={191} y={6} width={18} height={18} onTap={() => setIsOpen(true)} onClick={() => setIsOpen(true)} />
+        <Image
+          image={Imagetop1}
+          x={101}
+          y={6}
+          width={18}
+          height={18}
+          onTap={() => setIsOpen(true)}
+          onClick={() => setIsOpen(true)}
+        />
+        <Image
+          image={Imagetop2}
+          x={131}
+          y={6}
+          width={18}
+          height={18}
+          onTap={() => setIsOpen(true)}
+          onClick={() => setIsOpen(true)}
+        />
+        <Image
+          image={Imagetop3}
+          x={161}
+          y={6}
+          width={18}
+          height={18}
+          onTap={() => setIsOpen(true)}
+          onClick={() => setIsOpen(true)}
+        />
+        <Image
+          image={Imagetop4}
+          x={191}
+          y={6}
+          width={18}
+          height={18}
+          onTap={() => setIsOpen(true)}
+          onClick={() => setIsOpen(true)}
+        />
 
         {/* Draggable profile image */}
         <Image
@@ -140,45 +187,218 @@ function KonvaCanvas({
         {/* Footer text */}
         {isRight ? (
           <>
-            <Text x={218} y={295} width={150} height={5}  text="CALL FOR ASSOCIATION" fontSize={5}  fill="white" fontStyle="bold"  verticalAlign="middle" onClick={() => setIsOpenFtr(true)} onTap={() => setIsOpenFtr(true)} />
-            <Text x={205} y={297} width={150} height={20} text={`+91${profileMobile}` || "+91XXXXXXXXXX"} fontSize={11} fill="white" fontStyle="bold" verticalAlign="middle" onClick={() => setIsOpenFtr(true)} onTap={() => setIsOpenFtr(true)} />
-            <Text x={isSubGeneralType ? -10 : 70}  y={297} width={isSubGeneralType ? 205 : 120} height={2} text={ActualProfilename}  fontSize={ProfilefontSize}    fill="white" fontStyle="1000" align="center" verticalAlign="middle" onClick={() => setIsOpenFtr(true)} onTap={() => setIsOpenFtr(true)} />
-            <Text x={isSubGeneralType ? -10 : 70}  y={305} width={isSubGeneralType ? 205 : 120} height={2} text={ActualDesignation}   fontSize={DesignationfontSize} fill="white" fontStyle="bold"  align="center" verticalAlign="middle" onClick={() => setIsOpenFtr(true)} onTap={() => setIsOpenFtr(true)} />
+            <Text
+              x={218}
+              y={295}
+              width={150}
+              height={5}
+              text="CALL FOR ASSOCIATION"
+              fontSize={5}
+              fill="white"
+              fontStyle="bold"
+              verticalAlign="middle"
+              onClick={() => setIsOpenFtr(isSubGeneralType_bonanza ? false :true)}
+              onTap={() => setIsOpenFtr(isSubGeneralType_bonanza ? false :true)}
+            />
+            <Text
+              x={205}
+              y={297}
+              width={150}
+              height={20}
+              text={`+91${profileMobile}` || "+91XXXXXXXXXX"}
+              fontSize={11}
+              fill="white"
+              fontStyle="bold"
+              verticalAlign="middle"
+              onClick={() => setIsOpenFtr(isSubGeneralType_bonanza ? false :true)}
+              onTap={() => setIsOpenFtr(isSubGeneralType_bonanza ? false :true)}
+            />
+            <Text
+              x={isSubGeneralType ? -10 : 70}
+              y={297}
+              width={isSubGeneralType ? 205 : 120}
+              height={2}
+              text={ActualProfilename}
+              fontSize={ProfilefontSize}
+              fill="white"
+              fontStyle="1000"
+              align="center"
+              verticalAlign="middle"
+              onClick={() => setIsOpenFtr(isSubGeneralType_bonanza ? false :true)}
+              onTap={() => setIsOpenFtr(isSubGeneralType_bonanza ? false :true)}
+            />
+            <Text
+              x={isSubGeneralType ? -10 : 70}
+              y={305}
+              width={isSubGeneralType ? 205 : 120}
+              height={2}
+              text={ActualDesignation}
+              fontSize={DesignationfontSize}
+              fill="white"
+              fontStyle="bold"
+              align="center"
+              verticalAlign="middle"
+              onClick={() => setIsOpenFtr(isSubGeneralType_bonanza ? false :true)}
+              onTap={() => setIsOpenFtr(isSubGeneralType_bonanza ? false :true)}
+            />
           </>
         ) : (
           <>
-            <Text x={37}  y={295} width={150} height={5}  text="CALL FOR ASSOCIATION" fontSize={5}  fill="white" fontStyle="bold"  verticalAlign="middle" onClick={() => setIsOpenFtr(true)} onTap={() => setIsOpenFtr(true)} />
-            <Text x={30}  y={297} width={150} height={20} text={`+91${profileMobile}` || "+91XXXXXXXXXX"} fontSize={11} fill="white" fontStyle="bold" verticalAlign="middle" onClick={() => setIsOpenFtr(true)} onTap={() => setIsOpenFtr(true)} />
-            <Text x={133} y={297} width={isSubGeneralType ? 205 : 120} height={2} text={ActualProfilename}  fontSize={ProfilefontSize}    fill="white" fontStyle="1000" align="center" verticalAlign="middle" onClick={() => setIsOpenFtr(true)} onTap={() => setIsOpenFtr(true)} />
-            <Text x={133} y={305} width={isSubGeneralType ? 205 : 120} height={2} text={ActualDesignation}   fontSize={DesignationfontSize} fill="white" fontStyle="bold"  align="center" verticalAlign="middle" onClick={() => setIsOpenFtr(true)} onTap={() => setIsOpenFtr(true)} />
+            <Text
+              x={37}
+              y={295}
+              width={150}
+              height={5}
+              text="CALL FOR ASSOCIATION"
+              fontSize={5}
+              fill="white"
+              fontStyle="bold"
+              verticalAlign="middle"
+              onClick={() => setIsOpenFtr(isSubGeneralType_bonanza ? false :true)}
+              onTap={() => setIsOpenFtr(isSubGeneralType_bonanza ? false :true)}
+            />
+            <Text
+              x={30}
+              y={297}
+              width={150}
+              height={20}
+              text={`+91${profileMobile}` || "+91XXXXXXXXXX"}
+              fontSize={11}
+              fill="white"
+              fontStyle="bold"
+              verticalAlign="middle"
+              onClick={() => setIsOpenFtr(isSubGeneralType_bonanza ? false :true)}
+              onTap={() => setIsOpenFtr(isSubGeneralType_bonanza ? false :true)}
+            />
+            <Text
+              x={133}
+              y={297}
+              width={isSubGeneralType ? 205 : 120}
+              height={2}
+              text={ActualProfilename}
+              fontSize={ProfilefontSize}
+              fill="white"
+              fontStyle="1000"
+              align="center"
+              verticalAlign="middle"
+              onClick={() => setIsOpenFtr(isSubGeneralType_bonanza ? false :true)}
+              onTap={() => setIsOpenFtr(isSubGeneralType_bonanza ? false :true)}
+            />
+            <Text
+              x={133}
+              y={305}
+              width={isSubGeneralType ? 205 : 120}
+              height={2}
+              text={ActualDesignation}
+              fontSize={DesignationfontSize}
+              fill="white"
+              fontStyle="bold"
+              align="center"
+              verticalAlign="middle"
+              onClick={() => setIsOpenFtr(isSubGeneralType_bonanza ? false :true)}
+              onTap={() => setIsOpenFtr(isSubGeneralType_bonanza ? false :true)}
+            />
           </>
         )}
 
         {/* Achiever details */}
         {isRight ? (
           <>
-            <Text x={isSubGeneralType_birthday ? 35 : 55} y={isSubGeneralType_birthday ? 157 : 97}  width={120} height={2} text={ActualAchvrname} fontSize={AchieverNamefontSize} fill="white" fontStyle="1000" align="center" verticalAlign="middle" onClick={() => setIsOpenFtr(true)} onTap={() => setIsOpenFtr(true)} />
-            <Text x={isSubGeneralType_birthday ? 35 : 55} y={isSubGeneralType_birthday ? 172 : 110} width={120} height={2} text={ActualAchvrCity} fontSize={AchieverCityfontSize} fill="white" fontStyle="1000" align="center" verticalAlign="middle" onClick={() => setIsOpenFtr(true)} onTap={() => setIsOpenFtr(true)} />
+            <Text
+              x={isSubGeneralType_birthday ? 35 : 55}
+              y={isSubGeneralType_birthday ? 157 : 97}
+              width={120}
+              height={2}
+              text={ActualAchvrname}
+              fontSize={AchieverNamefontSize}
+              fill="white"
+              fontStyle="1000"
+              align="center"
+              verticalAlign="middle"
+              onClick={() => setIsOpenFtr(true)}
+              onTap={() => setIsOpenFtr(true)}
+            />
+            <Text
+              x={isSubGeneralType_birthday ? 35 : 55}
+              y={isSubGeneralType_birthday ? 172 : 110}
+              width={120}
+              height={2}
+              text={ActualAchvrCity}
+              fontSize={AchieverCityfontSize}
+              fill="white"
+              fontStyle="1000"
+              align="center"
+              verticalAlign="middle"
+              onClick={() => setIsOpenFtr(true)}
+              onTap={() => setIsOpenFtr(true)}
+            />
           </>
         ) : (
           <>
-            <Text x={isSubGeneralType_birthday ? 170 : 142} y={isSubGeneralType_birthday ? 157 : 97}  width={120} height={2} text={ActualAchvrname} fontSize={AchieverNamefontSize} fill="white" fontStyle="1000" align="center" verticalAlign="middle" onClick={() => setIsOpenFtr(true)} onTap={() => setIsOpenFtr(true)} />
-            <Text x={isSubGeneralType_birthday ? 170 : 142} y={isSubGeneralType_birthday ? 172 : 111} width={120} height={2} text={ActualAchvrCity} fontSize={AchieverCityfontSize} fill="white" fontStyle="1000" align="center" verticalAlign="middle" onClick={() => setIsOpenFtr(true)} onTap={() => setIsOpenFtr(true)} />
+            <Text
+              x={isSubGeneralType_birthday ? 170 : 142}
+              y={isSubGeneralType_birthday ? 157 : 97}
+              width={120}
+              height={2}
+              text={ActualAchvrname}
+              fontSize={AchieverNamefontSize}
+              fill="white"
+              fontStyle="1000"
+              align="center"
+              verticalAlign="middle"
+              onClick={() => setIsOpenFtr(true)}
+              onTap={() => setIsOpenFtr(true)}
+            />
+            <Text
+              x={isSubGeneralType_birthday ? 170 : 142}
+              y={isSubGeneralType_birthday ? 172 : 111}
+              width={120}
+              height={2}
+              text={ActualAchvrCity}
+              fontSize={AchieverCityfontSize}
+              fill="white"
+              fontStyle="1000"
+              align="center"
+              verticalAlign="middle"
+              onClick={() => setIsOpenFtr(true)}
+              onTap={() => setIsOpenFtr(true)}
+            />
           </>
         )}
 
         {/* Small promoter profile image */}
-        {!isSubGeneralType && (
-          isRight ? (
-            <Image image={ImageProfile} x={70}  y={240} scaleX={-1} width={80} height={80} />
+        {!isSubGeneralType &&
+          (isRight ? (
+            <Image
+              image={ImageProfile}
+              x={69}
+              y={230}
+              scaleX={-1}
+              width={70}
+              height={90}
+            />
           ) : (
-            <Image image={ImageProfile} x={249} y={240} scaleX={1}  width={80} height={80} />
-          )
-        )}
+            <Image
+              image={ImageProfile}
+              x={251}
+              y={230}
+              scaleX={1}
+              width={70}
+              height={90}
+            />
+          ))}
 
         {/* Transformers */}
-        <Transformer ref={transformerRef}       keepRatio={false} boundBoxFunc={boundBoxFunc} />
-        <Transformer ref={stickerTransformerRef} keepRatio={false} boundBoxFunc={boundBoxFunc} />
+        <Transformer
+          ref={transformerRef}
+          keepRatio={false}
+          boundBoxFunc={boundBoxFunc}
+        />
+        <Transformer
+          ref={stickerTransformerRef}
+          keepRatio={false}
+          boundBoxFunc={boundBoxFunc}
+        />
       </Layer>
     </Stage>
   );
