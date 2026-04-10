@@ -15,6 +15,8 @@ import AllTemplates from "./Pages/Homepage/Component/AllTemplates";
 import Mainform from "./Pages/mainform/Mainform";
 import MainEditor from "./Pages/Editor/MainEditor";
 import { useEffect } from "react";
+import Test from "./Pages/Test";
+import Myprofile from "./Pages/Profile/Myprofile";
 
 function App() {
   const navigate = useNavigate();
@@ -118,12 +120,28 @@ function App() {
         element={
           <ProtectedRoute>
             <ProtectMlmProfile>
-              <Layout><MainSubscription /></Layout>
+              <Layout>
+                <Test/>
+                <MainSubscription />
+              </Layout>
             </ProtectMlmProfile>
           </ProtectedRoute>
         }
       />
 
+ <Route
+        path="/profile"
+        element={
+          <ProtectedRoute>
+            <ProtectMlmProfile>
+              <Layout>
+               
+                <Myprofile/>
+              </Layout>
+            </ProtectMlmProfile>
+          </ProtectedRoute>
+        }
+      />
     </Routes>
   );
 }

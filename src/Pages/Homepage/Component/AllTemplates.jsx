@@ -33,9 +33,9 @@ const getSelType = (selType) => {
 };
 
 export default function AllTemplates() {
-  const navigate = useNavigate()
+  const navigate = useNavigate();
 
-  const { selType: contextSelType } = useGeneralData();
+  const { selType: contextSelType, setSelType } = useGeneralData();
   const selType = getSelType(contextSelType);
 
   const [tempdata, setTempData] = useState([]);
@@ -106,11 +106,11 @@ export default function AllTemplates() {
     return () => observerRef.current?.disconnect();
   }, [handleObserver]);
 
-  const onImageSelect = () => {
+  const onImageSelect = (item) => {
     const Profile = JSON.parse(localStorage.getItem("mlmProfile") || "{}");
 
     if (Profile?.companyId) {
-      // trigger model of mlm form 
+      // trigger model of mlm form
       const GENERAL_SELECT_TYPES = [
         { name: "Trending", value: "Trending" },
         { name: "Festival", value: "Festival" },
@@ -127,22 +127,34 @@ export default function AllTemplates() {
         { name: "Meeting", value: "Meeting" },
         // { name: "Anniversary & Birthday", value: "Anniversary_Birthday" },
         { name: "Greeting & Wishes", value: "Greeting_Wishes" },
-        { name: "Thank You (Birthday & Anniversary)", value: "ThankYou_Birthday_Anniversary" },
+        {
+          name: "Thank You (Birthday & Anniversary)",
+          value: "ThankYou_Birthday_Anniversary",
+        },
         // { name: "Capping", value: "Capping" },
       ];
 
-      const isGeneralType = GENERAL_SELECT_TYPES.some(t => t.value === selType?.type);
+      const isGeneralType = GENERAL_SELECT_TYPES.some(
+        (t) => t.value === selType?.type,
+      );
+      const seltype = {
+        id: item.id,
+        type: item.type,
+        serial: item.serial,
+        ShowCaseForm: item.ShowCaseForm,
+        Subtype: item.Subtype,
+      };
+      setSelType(seltype);
+      localStorage.setItem("selType", JSON.stringify(seltype));
       if (isGeneralType) {
-        navigate("/Editor")
+        navigate("/Editor");
       } else {
-        navigate("/mlmform")
+        navigate("/mlmform");
       }
-
     } else {
-      navigate("/mlmprofile")
+      navigate("/mlmprofile");
     }
-
-  }
+  };
   return (
     <div className="relative rounded-lg p-1.5 flex flex-col items-center justify-start h-full overflow-y-auto">
       <div className="flex items-center w-full gap-2 mb-1 px-1">
@@ -158,7 +170,11 @@ export default function AllTemplates() {
             stroke="currentColor"
             strokeWidth={2.5}
           >
-            <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              d="M15 19l-7-7 7-7"
+            />
           </svg>
         </button>
         <h3 className="text-sm font-bold truncate">
@@ -172,7 +188,7 @@ export default function AllTemplates() {
             className="flex-shrink-0 h-[90px] w-[90px] rounded-xl overflow-hidden cursor-pointer transition-transform duration-200 hover:scale-105"
           >
             <img
-              onClick={() => onImageSelect()}
+              onClick={() => onImageSelect(card)}
               src={card.image}
               alt="template"
               className="w-full h-full object-cover"

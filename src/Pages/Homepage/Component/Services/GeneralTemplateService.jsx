@@ -51,8 +51,10 @@ export const fetchGeneralTemplates = async (groupIndex) => {
         id: doc.id,
         image: doc.data().Showcase_url,
         type: doc.data().SelectType,
+        Subtype: doc.data().Subtype,
         ShowCaseForm: doc.data().ShowCaseForm,
         serial: doc.data().serial,
+
       }));
 
       result.push({

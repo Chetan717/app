@@ -14,10 +14,13 @@ function ListOfGenaraltemp({ templates, loading }) {
       type: item.type,
       serial: item.serial,
       ShowCaseForm: item.ShowCaseForm,
+      Subtype: item.Subtype,
     };
     setSelType(selttype);
     navigate("/alltemp");
   };
+
+  console.log(templates);
 
   // ✅ Helper to avoid repeating the condition everywhere
   const isGridType = (type) =>

@@ -52,7 +52,7 @@ export default function Header({
     }
   };
 
-  return (
+  return location.pathname === "/profile" ? null : (
     <header className="sticky top-0 z-20 h-16 flex items-center px-2 gap-1 bg-white/80 dark:bg-[#0f1117]/80 backdrop-blur-md border-b border-gray-100 dark:border-gray-800/70">
       {/* Sidebar toggle */}
       <button
@@ -64,7 +64,7 @@ export default function Header({
       </button>
 
       {/* Company logo + user name — mobile only */}
-      <div className="flex items-center gap-2 md:hidden">
+      <div className="flex items-center gap-2">
         {companyLogo ? (
           <img
             src={companyLogo}
@@ -105,7 +105,10 @@ export default function Header({
             </div> */}
           </button>
         ) : (
-          <button className="flex items-center gap-2 pl-2 pr-2.5 py-1 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors group">
+          <button
+            onClick={() => navigate("/profile")}
+            className="flex items-center gap-2 pl-2 pr-2.5 py-1 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors group"
+          >
             <div className="w-7 h-7 rounded-lg bg-[#0e245c] flex items-center justify-center text-white font-bold text-xs flex-shrink-0">
               {userName?.[0]?.toUpperCase() || "A"}
             </div>

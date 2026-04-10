@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import Sidebar from "./components/Sidebar";
 import Header from "./components/Header";
+import TabBar from "./components/TabBar";
 
 const PAGE_LABELS = {
   dashboard: "Dashboard",
@@ -54,9 +55,18 @@ export default function Layout({ children }) {
           setDarkMode={setDarkMode}
           activeLabel={PAGE_LABELS[active] ?? "Dashboard"}
         />
-        <div  className="flex-1 h-full overflow-y-auto layout-scroll-container">
+        
+        <div className="flex-1 h-full overflow-y-auto layout-scroll-container">
           {children}
         </div>
+        <TabBar
+          collapsed={collapsed}
+          setCollapsed={setCollapsed}
+          setMobileOpen={setMobileOpen}
+          darkMode={darkMode}
+          setDarkMode={setDarkMode}
+          activeLabel={PAGE_LABELS[active] ?? "Dashboard"}
+        />
       </div>
     </div>
   );

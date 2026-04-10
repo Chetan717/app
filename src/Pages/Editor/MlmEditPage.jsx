@@ -138,23 +138,51 @@ function MlmEditPage({
     "anonymous",
   );
 
-  // ── Export ───────────────────────────────────────────────────
   const handleExport = () => {
     profileState.deselectAll();
     setTimeout(() => {
       const uri = stageRef.current.toDataURL({
         pixelRatio: EXPORT_PIXEL_RATIO,
-        mimeType: "image/png",
+        mimeType: "video/mp4",
         quality: 1,
       });
       const link = document.createElement("a");
-      link.download = "stage-hd.png";
+      link.download = "stage-hd.mp4";
       link.href = uri;
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
     }, 50);
   };
+//   const handleExportVideo = () => {
+//   profileState.deselectAll();
+
+//   const canvas = stageRef.current.getLayers()[0].getCanvas()._canvas;
+//   const stream = canvas.captureStream(30); // 30 fps
+//   const recorder = new MediaRecorder(stream, { mimeType: "video/webm" });
+//   const chunks = [];
+
+//   recorder.ondataavailable = (e) => {
+//     if (e.data.size > 0) chunks.push(e.data);
+//   };
+
+//   recorder.onstop = () => {
+//     const blob = new Blob(chunks, { type: "video/webm" });
+//     const url = URL.createObjectURL(blob);
+//     const link = document.createElement("a");
+//     link.download = "stage-hd.webm";  // browsers save as .webm, not .mp4
+//     link.href = url;
+//     document.body.appendChild(link);
+//     link.click();
+//     document.body.removeChild(link);
+//     URL.revokeObjectURL(url);
+//   };
+
+//   recorder.start();
+
+//   // Record for X seconds then stop (change 5000 to however long you want)
+//   setTimeout(() => recorder.stop(), 5000);
+// };
 
   return (
     <div className="flex flex-col justify-start items-center h-full">

@@ -32,6 +32,7 @@ export const Alltemplateservice = async (Selected_type, lastDoc = null, pageSize
         id: doc.id,
         image: data.Showcase_url || "",
         company: data.Company,
+        Subtype : data.Subtype,
         type: data.SelectType,
         ShowCaseForm: data?.ShowCaseForm,
         serial: data?.serial,

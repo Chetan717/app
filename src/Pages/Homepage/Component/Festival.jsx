@@ -35,13 +35,14 @@ export default function Festival() {
       sliderRef.current.scrollBy({ left: dir * 220, behavior: "smooth" });
     }
   };
-
+  
   const handleImagePress = (item) => {
     setSelectedTemp(item);
     const selttype = {
       id: item.id,
       type: item.type,
       serial: item.serial,
+
       ShowCaseForm: item.ShowCaseForm,
     };
     setSelType(selttype);
