@@ -1,5 +1,9 @@
 import { useState } from "react";
-
+import { useGeneralData } from "../../Context/GeneralContext";
+import InvoicePopup from "./utils/InvoicePopup";
+import { useNavigate } from "react-router";
+import ChangePin from "./utils/ChangePin";
+import DeleteAcc from "./utils/DeleteAcc";
 /* ─────────────────────────────────────────
    Gravity UI – inline SVG icon components
    Paths sourced from @gravity-ui/icons v2
@@ -50,11 +54,7 @@ const GlobeIcon = () => (
 
 // Gravity UI – Moon (Dark Mode)
 const MoonIcon = () => (
-  <Icon
-    d={[
-      "M13.5 9.5A5.5 5.5 0 0 1 6.5 2.5a5.5 5.5 0 1 0 7 7Z",
-    ]}
-  />
+  <Icon d={["M13.5 9.5A5.5 5.5 0 0 1 6.5 2.5a5.5 5.5 0 1 0 7 7Z"]} />
 );
 
 // Gravity UI – FileArrowDown (Invoice)
@@ -162,9 +162,7 @@ const FileTextIcon = () => (
 );
 
 // Gravity UI – ChevronRight
-const ChevronRightIcon = () => (
-  <Icon d="M6 3.5 10.5 8 6 12.5" />
-);
+const ChevronRightIcon = () => <Icon d="M6 3.5 10.5 8 6 12.5" />;
 
 /* ─────────────────────────────────────────
    Toggle Switch (HeroUI-style)
@@ -214,10 +212,14 @@ const MenuRow = ({
       danger ? "text-red-500" : "text-gray-800"
     }`}
   >
-    <span className={`flex-shrink-0 ${danger ? "text-red-400" : "text-gray-500"}`}>
+    <span
+      className={`flex-shrink-0 ${danger ? "text-red-400" : "text-gray-500"}`}
+    >
       <IconComp />
     </span>
-    <span className={`flex-1 text-[15px] font-medium ${danger ? "text-red-500" : "text-gray-800"}`}>
+    <span
+      className={`flex-1 text-[15px] font-medium ${danger ? "text-red-500" : "text-gray-800"}`}
+    >
       {label}
     </span>
     {rightContent && (
@@ -241,78 +243,96 @@ const Divider = () => <div className="mx-4 border-t border-gray-100" />;
 ───────────────────────────────────────── */
 export default function SettingsMenu() {
   const [darkMode, setDarkMode] = useState(false);
+  const [invShow, setInvShow] = useState(false);
+  const [chngePin, setChngePin] = useState(false);
+  const [deleteAcc, setDeleteAcc] = useState(false);
   const [language, setLanguage] = useState("English");
+  const navigate = useNavigate();
+  const { theme, toggleTheme } = useGeneralData();
+  const chngetheme = () => {
+    toggleTheme();
+    setDarkMode((v) => !v);
+  };
 
   return (
-    <div className=" bg-gray-50 w-full flex items-start justify-center p-2">
-      <div className="w-full bg-white rounded-2xl shadow-sm overflow-hidden border border-gray-100">
+    <>
+      <InvoicePopup show={invShow} setInvShow={setInvShow} />
+      <ChangePin show={chngePin} setChngePin={setChngePin} />
+      <DeleteAcc show={deleteAcc} setDeleteAcc={setDeleteAcc} />
+      <div className=" bg-gray-50 w-full flex items-start justify-center p-2">
+        <div className="w-full bg-white rounded-2xl shadow-sm overflow-hidden border border-gray-100">
+          {/* ── PREFERENCES ── */}
+          <SectionHeader title="Preferences" />
 
-        {/* ── PREFERENCES ── */}
-        <SectionHeader title="Preferences" />
-
-        <MenuRow
+          {/* <MenuRow
           icon={GlobeIcon}
           label="Languages"
           rightContent={
             <span className="text-[14px] text-gray-400">{language}</span>
           }
         />
-        <Divider />
+        <Divider /> */}
 
-        <MenuRow
-          icon={MoonIcon}
-          label="Dark Mode"
-          showArrow={false}
-          rightContent={
-            <Toggle
-              checked={darkMode}
-              onChange={() => setDarkMode((v) => !v)}
-            />
-          }
-        />
-        <Divider />
+          <MenuRow
+            icon={MoonIcon}
+            label="Dark Mode"
+            showArrow={false}
+            rightContent={<Toggle checked={darkMode} onChange={chngetheme} />}
+          />
+          <Divider />
 
-        <MenuRow
-          icon={InvoiceIcon}
-          label="Invoice"
-          rightContent={
-            <span className="text-gray-400">
-              <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M8 3v7M5.5 7.5 8 10l2.5-2.5M3 12.5h10" />
-              </svg>
-            </span>
-          }
-        />
+          <MenuRow
+            icon={InvoiceIcon}
+            label="Invoice"
+            onClick={() => setInvShow(true)}
+            rightContent={
+              <span className="text-gray-400">
+                <svg
+                  width="16"
+                  height="16"
+                  viewBox="0 0 16 16"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="1.5"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                >
+                  <path d="M8 3v7M5.5 7.5 8 10l2.5-2.5M3 12.5h10" />
+                </svg>
+              </span>
+            }
+          />
 
-        {/* ── HELP & SUPPORT ── */}
-        <SectionHeader title="Help & Support" />
+          {/* ── HELP & SUPPORT ── */}
+          <SectionHeader title="Help & Support" />
 
-        <MenuRow icon={GearIcon} label="Banner Setting" />
-        <Divider />
-        <MenuRow icon={CircleQuestionIcon} label="Learn How to use apps" />
-        <Divider />
-        <MenuRow icon={PersonIcon} label="Customer Care" />
-        <Divider />
-        <MenuRow icon={CommentIcon} label="Chat with an Expert" />
+          <MenuRow onClick={()=>navigate("/mlmprofile")} icon={GearIcon} label="Banner Setting" />
+          <Divider />
+          <MenuRow icon={CircleQuestionIcon} label="Learn How to use apps" />
+          <Divider />
+          <MenuRow icon={PersonIcon} label="Customer Care" />
+          <Divider />
+          <MenuRow icon={CommentIcon} label="Chat with an Expert" />
 
-        {/* ── SECURITY ── */}
-        <SectionHeader title="Security" />
+          {/* ── SECURITY ── */}
+          <SectionHeader title="Security" />
 
-        <MenuRow icon={KeyIcon} label="Change Password" />
-        <Divider />
-        <MenuRow icon={PersonXmarkIcon} label="Delete My Account" danger />
+          <MenuRow onClick={()=>setChngePin(true)} icon={KeyIcon} label="Change Password" />
+          <Divider />
+          <MenuRow  onClick={()=>setDeleteAcc(true)} icon={PersonXmarkIcon} label="Delete My Account" danger />
 
-        {/* ── ABOUT ── */}
-        <SectionHeader title="About" />
+          {/* ── ABOUT ── */}
+          <SectionHeader title="About" />
 
-        <MenuRow icon={StarIcon} label="Feedback & Review" />
-        <Divider />
-        <MenuRow icon={ShieldIcon} label="Privacy Policy" />
-        <Divider />
-        <MenuRow icon={FileTextIcon} label="Term & Condition" />
+          <MenuRow icon={StarIcon} label="Feedback & Review" />
+          <Divider />
+          <MenuRow icon={ShieldIcon} label="Privacy Policy" />
+          <Divider />
+          <MenuRow icon={FileTextIcon} label="Term & Condition" />
 
-        <div className="h-4" />
+          <div className="h-4" />
+        </div>
       </div>
-    </div>
+    </>
   );
 }

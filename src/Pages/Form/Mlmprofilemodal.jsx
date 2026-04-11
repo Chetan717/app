@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from "react";
 import { db, app } from "../../../Firebase";
 import {
-  collection, addDoc, updateDoc, doc,
+  collection, addDoc, updateDoc, deleteDoc, doc,
   serverTimestamp, query, where, getDocs,
 } from "firebase/firestore";
 import {
@@ -10,7 +10,8 @@ import {
 } from "firebase/storage";
 import MultiImagePicker from "./MultiImagePicker";
 import { ImageEditorCanvas } from "./ImageEditorCanvas";
-import { toast } from "@heroui/react"; 
+import { toast } from "@heroui/react";
+import { useNavigate } from "react-router";
 
 const storage = getStorage(app);
 
@@ -107,9 +108,99 @@ const initialForm = (mobile = "") => ({
 });
 
 // ════════════════════════════════════════════════════════════
+// DELETE CONFIRMATION MODAL
+// ════════════════════════════════════════════════════════════
+function DeleteConfirmModal({ userMobile, onConfirm, onCancel, deleting }) {
+  const [inputMobile, setInputMobile] = useState("");
+  const isMatch = inputMobile.trim() === userMobile.trim();
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm px-4">
+      <div className="bg-white dark:bg-zinc-900 rounded-2xl shadow-2xl w-full max-w-sm p-6 flex flex-col gap-4">
+        {/* Icon + Title */}
+        <div className="flex flex-col items-center gap-2 text-center">
+          <div className="w-14 h-14 rounded-full bg-red-100 flex items-center justify-center">
+            <svg className="w-7 h-7 text-red-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z" />
+            </svg>
+          </div>
+          <h2 className="text-lg font-bold text-slate-800 dark:text-white">Delete Profile?</h2>
+          <p className="text-sm text-slate-500 dark:text-slate-400 leading-relaxed">
+            This action is <span className="font-semibold text-red-500">permanent</span> and cannot be undone.
+            Your entire MLM profile will be deleted.
+          </p>
+        </div>
+
+        {/* Mobile confirmation input */}
+        <div className="flex flex-col gap-1.5">
+          <label className="text-xs font-semibold text-slate-600 dark:text-slate-300 uppercase tracking-wide">
+            Confirm by entering your mobile number
+          </label>
+          <input
+            type="tel"
+            placeholder={`Enter ${userMobile}`}
+            value={inputMobile}
+            onChange={(e) => setInputMobile(e.target.value)}
+            className={`w-full border rounded-xl px-4 py-2.5 text-sm font-mono tracking-wider focus:outline-none focus:ring-2 transition dark:bg-zinc-800 dark:text-white
+              ${inputMobile.length > 0
+                ? isMatch
+                  ? "border-green-400 focus:ring-green-300 bg-green-50"
+                  : "border-red-300 focus:ring-red-200 bg-red-50"
+                : "border-slate-300 focus:ring-red-300"
+              }`}
+          />
+          {inputMobile.length > 0 && !isMatch && (
+            <p className="text-xs text-red-500">Mobile number doesn't match</p>
+          )}
+          {isMatch && (
+            <p className="text-xs text-green-600 font-medium">✓ Mobile number confirmed</p>
+          )}
+        </div>
+
+        {/* Buttons */}
+        <div className="flex gap-3 mt-1">
+          <button
+            type="button"
+            onClick={onCancel}
+            disabled={deleting}
+            className="flex-1 py-2.5 rounded-xl border border-slate-300 text-slate-700 dark:text-slate-300 text-sm font-medium hover:bg-slate-50 transition disabled:opacity-50"
+          >
+            Cancel
+          </button>
+          <button
+            type="button"
+            onClick={onConfirm}
+            disabled={!isMatch || deleting}
+            className="flex-1 py-2.5 rounded-xl bg-red-600 text-white text-sm font-semibold hover:bg-red-700 transition disabled:opacity-40 flex items-center justify-center gap-2 shadow-md"
+          >
+            {deleting ? (
+              <>
+                <svg className="animate-spin w-4 h-4" fill="none" viewBox="0 0 24 24">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z" />
+                </svg>
+                Deleting…
+              </>
+            ) : (
+              <>
+                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M14.74 9l-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 01-2.244 2.077H8.084a2.25 2.25 0 01-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 00-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 013.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 00-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 00-7.5 0" />
+                </svg>
+                Delete Profile
+              </>
+            )}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ════════════════════════════════════════════════════════════
 // PAGE COMPONENT
 // ════════════════════════════════════════════════════════════
 export default function MLMProfilePage() {
+  const navigate = useNavigate();
   const userMlm = getUserMlm();
   const userMobile = (userMlm.mobileNo || "").trim();
 
@@ -123,6 +214,10 @@ export default function MLMProfilePage() {
   const [saveError, setSaveError] = useState(null);
   const [loadingProfile, setLoadingProfile] = useState(true);
   const [existingDocId, setExistingDocId] = useState(null);
+
+  // Delete states
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [deleting, setDeleting] = useState(false);
 
   const profileInputRef = useRef(null);
   const logoInputRef = useRef(null);
@@ -452,6 +547,35 @@ export default function MLMProfilePage() {
     }
   };
 
+  // ── Delete ─────────────────────────────────────────────────
+  const handleDeleteConfirm = async () => {
+    if (!existingDocId) return;
+    setDeleting(true);
+    try {
+      // Query by mobile to find the document (safety check)
+      const q = query(collection(db, "mlmprofiles"), where("mobile", "==", userMobile));
+      const snap = await getDocs(q);
+
+      if (!snap.empty) {
+        await deleteDoc(doc(db, "mlmprofiles", snap.docs[0].id));
+      }
+
+      // Clear local storage
+      localStorage.removeItem("mlmProfile");
+
+      toast.success("Profile deleted successfully.");
+      setShowDeleteModal(false);
+
+      // Navigate to logout
+      setTimeout(() => navigate("/logout"), 800);
+    } catch (err) {
+      console.error("Delete error:", err);
+      toast.error("Failed to delete profile. Please try again.");
+    } finally {
+      setDeleting(false);
+    }
+  };
+
   // ════════════════════════════════════════════════════════════
   // RENDER
   // ════════════════════════════════════════════════════════════
@@ -493,290 +617,329 @@ export default function MLMProfilePage() {
 
   // ── Main form ──────────────────────────────────────────────
   return (
-    <div className="max-w-lg mx-auto p-2">
+    <>
+      {/* Delete Confirmation Modal */}
+      {showDeleteModal && (
+        <DeleteConfirmModal
+          userMobile={userMobile}
+          onConfirm={handleDeleteConfirm}
+          onCancel={() => setShowDeleteModal(false)}
+          deleting={deleting}
+        />
+      )}
 
-      {/* Page header */}
-      <div className="mb-2">
-        <h1 className="text-md dark:text-white font-bold text-slate-800">
-          {isEditMode ? "Edit Profile" : "Create Profile"}
-        </h1>
-      </div>
+      <div className="max-w-lg mx-auto p-2">
 
-      <div className="flex flex-col gap-6">
-
-        {/* ── LOGO ──────────────────────────────────────────── */}
-        <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-4">
-          <label className="block dark:text-black text-sm font-semibold text-slate-700 mb-3">
-            Company Logo
-          </label>
-          <div className="flex flex-col gap-2 items-center">
-            {form.logoSelectedLinks.length > 0 && (
-              <div className="flex gap-2 flex-wrap justify-center">
-                {form.logoSelectedLinks.map((link, i) => (
-                  <img key={i} src={link} alt="Logo" className="w-14 h-14 rounded-full object-contain border-2 border bg-slate-100" />
-                ))}
-              </div>
-            )}
-            <MultiImagePicker
-              companyImages={logos}
-              selectedLinks={form.logoSelectedLinks}
-              onToggleLink={handleLogoToggleLink}
-              customFiles={form.logoCustomFiles}
-              onAddCustomFiles={handleLogoAddCustomFiles}
-              onRemoveCustomFile={handleLogoRemoveCustomFile}
-              inputRef={logoInputRef}
-              companyGridCols={4}
-              thumbHeight="h-14"
-            />
-          </div>
+        {/* Page header */}
+        <div className="mb-2">
+          <h1 className="text-md dark:text-white font-bold text-slate-800">
+            {isEditMode ? "Edit Profile" : "Create Profile"}
+          </h1>
         </div>
 
-        {/* ── FULL NAME + MOBILE + DESIGNATION ─────────────── */}
-        <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-4">
+        <div className="flex flex-col gap-6">
 
-          {/* Full Name */}
-          <label className="block text-sm font-semibold text-slate-700 mb-2">
-            Full Name <span className="text-red-500">*</span>
-          </label>
-          <div className="flex gap-2 mb-3">
+          {/* ── LOGO ──────────────────────────────────────────── */}
+          <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-4">
+            <label className="block dark:text-black text-sm font-semibold text-slate-700 mb-3">
+              Company Logo
+            </label>
+            <div className="flex flex-col gap-2 items-center">
+              {form.logoSelectedLinks.length > 0 && (
+                <div className="flex gap-2 flex-wrap justify-center">
+                  {form.logoSelectedLinks.map((link, i) => (
+                    <img key={i} src={link} alt="Logo" className="w-14 h-14 rounded-full object-contain border-2 border bg-slate-100" />
+                  ))}
+                </div>
+              )}
+              <MultiImagePicker
+                companyImages={logos}
+                selectedLinks={form.logoSelectedLinks}
+                onToggleLink={handleLogoToggleLink}
+                customFiles={form.logoCustomFiles}
+                onAddCustomFiles={handleLogoAddCustomFiles}
+                onRemoveCustomFile={handleLogoRemoveCustomFile}
+                inputRef={logoInputRef}
+                companyGridCols={4}
+                thumbHeight="h-14"
+              />
+            </div>
+          </div>
+
+          {/* ── FULL NAME + MOBILE + DESIGNATION ─────────────── */}
+          <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-4">
+
+            {/* Full Name */}
+            <label className="block text-sm font-semibold text-slate-700 mb-2">
+              Full Name <span className="text-red-500">*</span>
+            </label>
+            <div className="flex gap-2 mb-3">
+              <select
+                value={form.salutation}
+                onChange={(e) => setField("salutation", e.target.value)}
+                className="border dark:text-black border-slate-300 rounded-lg px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-indigo-400"
+              >
+                {["Mr", "Mrs", "Ms", "Dr"].map((s) => <option key={s} value={s}>{s}</option>)}
+              </select>
+              <input
+                type="text"
+                placeholder="Enter name"
+                value={form.name}
+                onChange={(e) => { setField("name", e.target.value); clearError("name"); }}
+                className={`flex-1 dark:text-black border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400 ${errors.name ? "border-red-400 bg-red-50" : "border-slate-300"}`}
+              />
+            </div>
+            {errors.name && <p className="text-xs text-red-500 mt-1 mb-2">{errors.name}</p>}
+
+            {/* Mobile */}
+            <label className="block text-sm font-semibold text-slate-700 mb-2">
+              Mobile Number
+              <span className="ml-2 text-xs font-normal text-slate-400 bg-slate-100 px-2 py-0.5 rounded-full">🔒 Locked</span>
+            </label>
+            <div className="relative mb-3">
+              <input
+                type="tel"
+                value={userMobile}
+                readOnly
+                className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm bg-slate-50 text-slate-500 cursor-not-allowed"
+              />
+              <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-slate-400">from account</span>
+            </div>
+
+            {/* Designation */}
+            <label className="block text-sm font-semibold text-slate-700 mb-2">
+              Designation <span className="text-red-500">*</span>
+            </label>
             <select
-              value={form.salutation}
-              onChange={(e) => setField("salutation", e.target.value)}
-              className="border dark:text-black border-slate-300 rounded-lg px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-indigo-400"
+              value={form.designation}
+              onChange={(e) => { setField("designation", e.target.value); clearError("designation"); }}
+              className={`w-full border dark:text-black rounded-lg px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-indigo-400 ${errors.designation ? "border-red-400 bg-red-50" : "border-slate-300"}`}
             >
-              {["Mr", "Mrs", "Ms", "Dr"].map((s) => <option key={s} value={s}>{s}</option>)}
+              <option value="">Select designation…</option>
+              {designations.length > 0
+                ? designations.map((d) => <option key={d.id} value={d.profilename}>{d.profilename}</option>)
+                : <option disabled>No designations in company data</option>}
             </select>
-            <input
-              type="text"
-              placeholder="Enter name"
-              value={form.name}
-              onChange={(e) => { setField("name", e.target.value); clearError("name"); }}
-              className={`flex-1 dark:text-black border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400 ${errors.name ? "border-red-400 bg-red-50" : "border-slate-300"}`}
-            />
-          </div>
-          {errors.name && <p className="text-xs text-red-500 mt-1 mb-2">{errors.name}</p>}
+            {errors.designation && <p className="text-xs text-red-500 mt-1">{errors.designation}</p>}
 
-          {/* Mobile */}
-          <label className="block text-sm font-semibold text-slate-700 mb-2">
-            Mobile Number
-            <span className="ml-2 text-xs font-normal text-slate-400 bg-slate-100 px-2 py-0.5 rounded-full">🔒 Locked</span>
-          </label>
-          <div className="relative mb-3">
-            <input
-              type="tel"
-              value={userMobile}
-              readOnly
-              className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm bg-slate-50 text-slate-500 cursor-not-allowed"
-            />
-            <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-slate-400">from account</span>
           </div>
 
-          {/* Designation */}
-          <label className="block text-sm font-semibold text-slate-700 mb-2">
-            Designation <span className="text-red-500">*</span>
-          </label>
-          <select
-            value={form.designation}
-            onChange={(e) => { setField("designation", e.target.value); clearError("designation"); }}
-            className={`w-full border dark:text-black rounded-lg px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-indigo-400 ${errors.designation ? "border-red-400 bg-red-50" : "border-slate-300"}`}
-          >
-            <option value="">Select designation…</option>
-            {designations.length > 0
-              ? designations.map((d) => <option key={d.id} value={d.profilename}>{d.profilename}</option>)
-              : <option disabled>No designations in company data</option>}
-          </select>
-          {errors.designation && <p className="text-xs text-red-500 mt-1">{errors.designation}</p>}
-
-        </div>
-
-        {/* ── PROFILE PHOTO ─────────────────────────────────── */}
-        <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-4">
-          <label className="block text-sm font-semibold text-slate-700 mb-3">
-            Profile Photo
-          </label>
-          <div className="flex flex-col items-center gap-3">
-            <div className="flex flex-wrap items-start gap-3 w-full">
-              {allProfileImages.length > 0 ? (
-                allProfileImages.map(({ url, isExisting }, idx) => (
-                  <div key={idx} className="flex flex-col items-center gap-1">
-                    <div className="relative">
-                      <img
-                        src={url}
-                        alt={`Profile ${idx + 1}`}
-                        className="w-20 h-20 rounded-xl object-contain border-2 border bg-slate-100"
-                      />
-                      {isExisting && (
-                        <span className="absolute -top-1 -right-1 bg-green-500 text-white text-[9px] px-1.5 py-0.5 rounded-full leading-tight">
-                          saved
-                        </span>
-                      )}
+          {/* ── PROFILE PHOTO ─────────────────────────────────── */}
+          <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-4">
+            <label className="block text-sm font-semibold text-slate-700 mb-3">
+              Profile Photo
+            </label>
+            <div className="flex flex-col items-center gap-3">
+              <div className="flex flex-wrap items-start gap-3 w-full">
+                {allProfileImages.length > 0 ? (
+                  allProfileImages.map(({ url, isExisting }, idx) => (
+                    <div key={idx} className="flex flex-col items-center gap-1">
+                      <div className="relative">
+                        <img
+                          src={url}
+                          alt={`Profile ${idx + 1}`}
+                          className="w-20 h-20 rounded-xl object-contain border-2 border bg-slate-100"
+                        />
+                        {isExisting && (
+                          <span className="absolute -top-1 -right-1 bg-green-500 text-white text-[9px] px-1.5 py-0.5 rounded-full leading-tight">
+                            saved
+                          </span>
+                        )}
+                      </div>
+                      <div className="flex gap-1">
+                        <button
+                          type="button"
+                          onClick={(e) => { e.stopPropagation(); handleRemoveProfileImage(idx); }}
+                          className=" w-4 h-4 rounded-full bg-red-500 text-white text-xs flex items-center justify-center shadow "
+                        >
+                          ✕
+                        </button>
+                      </div>
                     </div>
-                    <div className="flex gap-1">
+                  ))
+                ) : (
+                  <div className="w-20 h-20 rounded-full border-2 border-dashed border-slate-300 bg-slate-50 flex items-center justify-center text-slate-400 text-xs text-center px-2">
+                    No photo
+                  </div>
+                )}
+              </div>
+              <div
+                onClick={() => !removingBg && profileInputRef.current?.click()}
+                className={`text-sm w-full flex justify-center items-center gap-2 p-2.5 rounded-lg bg-slate-100 border text-gray-600 hover:bg-indigo-50 transition ${removingBg ? "opacity-50 cursor-not-allowed" : "cursor-pointer"}`}
+              >
+                {removingBg ? (
+                  <>
+                    <svg className="animate-spin w-4 h-4 text-accent" fill="none" viewBox="0 0 24 24">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z" />
+                    </svg>
+                    Removing BG…
+                  </>
+                ) : (
+                  <>
+                    <svg viewBox="0 0 20 20" fill="currentColor" className="w-4 h-4 text-accent">
+                      <path d="M4 5a2 2 0 012-2h2l1-1h2l1 1h2a2 2 0 012 2v9a2 2 0 01-2 2H6a2 2 0 01-2-2V5zm6 3a3 3 0 100 6 3 3 0 000-6z" />
+                    </svg>
+                    Upload Profile Image
+                  </>
+                )}
+              </div>
+              <input ref={profileInputRef} type="file" accept="image/*" onChange={handleProfileFileSelect} className="hidden" />
+            </div>
+          </div>
+
+          {/* ── TOPUP LINE ────────────────────────────────────── */}
+          <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-4">
+            <label className="block text-sm font-semibold text-slate-700 mb-3">
+              Topup Line Images
+            </label>
+            <div className="flex flex-col gap-2 items-center">
+              {form.topupSelectedLinks.length > 0 && (
+                <div className="flex gap-2 flex-wrap justify-center">
+                  {form.topupSelectedLinks.map((link, i) => (
+                    <div key={i} className="relative group">
+                      <img
+                        src={link}
+                        alt="Topup"
+                        className="w-14 h-14 rounded-full object-contain border-2 border bg-slate-100"
+                      />
                       <button
                         type="button"
-                        onClick={(e) => { e.stopPropagation(); handleRemoveProfileImage(idx); }}
-                      className=" w-4 h-4 rounded-full bg-red-500 text-white text-xs flex items-center justify-center shadow "
+                        onClick={() => handleTopupToggleLink(link)}
+                        className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-red-500 text-white text-xs flex items-center justify-center shadow "
+                        title="Deselect"
                       >
                         ✕
                       </button>
                     </div>
-                  </div>
-                ))
-              ) : (
-                <div className="w-20 h-20 rounded-full border-2 border-dashed border-slate-300 bg-slate-50 flex items-center justify-center text-slate-400 text-xs text-center px-2">
-                  No photo
+                  ))}
                 </div>
               )}
+
+              <MultiImagePicker
+                companyImages={topuplines}
+                selectedLinks={form.topupSelectedLinks}
+                onToggleLink={handleTopupToggleLink}
+                customFiles={form.topupCustomFiles}
+                onAddCustomFiles={handleTopupAddCustomFiles}
+                onRemoveCustomFile={handleTopupRemoveCustomFile}
+                inputRef={topupInputRef}
+                companyGridCols={3}
+                thumbHeight="h-16"
+              />
             </div>
-            <div
-              onClick={() => !removingBg && profileInputRef.current?.click()}
-              className={`text-sm w-full flex justify-center items-center gap-2 p-2.5 rounded-lg bg-slate-100 border text-gray-600 hover:bg-indigo-50 transition ${removingBg ? "opacity-50 cursor-not-allowed" : "cursor-pointer"}`}
-            >
-              {removingBg ? (
-                <>
-                  <svg className="animate-spin w-4 h-4 text-accent" fill="none" viewBox="0 0 24 24">
-                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z" />
-                  </svg>
-                  Removing BG…
-                </>
-              ) : (
-                <>
-                  <svg viewBox="0 0 20 20" fill="currentColor" className="w-4 h-4 text-accent">
-                    <path d="M4 5a2 2 0 012-2h2l1-1h2l1 1h2a2 2 0 012 2v9a2 2 0 01-2 2H6a2 2 0 01-2-2V5zm6 3a3 3 0 100 6 3 3 0 000-6z" />
-                  </svg>
-                  Upload Profile Image
-                </>
-              )}
-            </div>
-            <input ref={profileInputRef} type="file" accept="image/*" onChange={handleProfileFileSelect} className="hidden" />
           </div>
-        </div>
 
-        {/* ── TOPUP LINE ────────────────────────────────────── */}
-        <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-4">
-          <label className="block text-sm font-semibold text-slate-700 mb-3">
-            Topup Line Images
-          </label>
-          <div className="flex flex-col gap-2 items-center">
-
-            {/* ✅ Selected topup images with deselect button */}
-            {form.topupSelectedLinks.length > 0 && (
-              <div className="flex gap-2 flex-wrap justify-center">
-                {form.topupSelectedLinks.map((link, i) => (
-                  <div key={i} className="relative group">
-                    <img
-                      src={link}
-                      alt="Topup"
-                      className="w-14 h-14 rounded-full object-contain border-2 border bg-slate-100"
-                    />
-                    <button
-                      type="button"
-                      onClick={() => handleTopupToggleLink(link)}
-                      className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-red-500 text-white text-xs flex items-center justify-center shadow "
-                      title="Deselect"
-                    >
-                      ✕
-                    </button>
-                  </div>
-                ))}
-              </div>
-            )}
-
-            <MultiImagePicker
-              companyImages={topuplines}
-              selectedLinks={form.topupSelectedLinks}
-              onToggleLink={handleTopupToggleLink}
-              customFiles={form.topupCustomFiles}
-              onAddCustomFiles={handleTopupAddCustomFiles}
-              onRemoveCustomFile={handleTopupRemoveCustomFile}
-              inputRef={topupInputRef}
-              companyGridCols={3}
-              thumbHeight="h-16"
-            />
-          </div>
-        </div>
-
-        {/* ── SOCIAL MEDIA ──────────────────────────────────── */}
-        <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-4">
-          <label className="block text-sm font-semibold text-slate-700 mb-3">
-            Social Media Links{" "}
-            <span className="text-slate-400 font-normal">(Optional)</span>
-          </label>
-          <div className="flex flex-col gap-3">
-            {SOCIAL_PLATFORMS.map((platform) => (
-              <div key={platform} className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-xl bg-slate-50 border border-slate-200 flex items-center justify-center shrink-0">
-                  <SocialIcon name={platform} active={false} />
-                </div>
-                <input
-                  type="text"
-                  placeholder={`${platform} user ID`}
-                  maxLength={60}
-                  value={form.socials[platform]}
-                  onChange={(e) => setForm((f) => ({ ...f, socials: { ...f.socials, [platform]: e.target.value } }))}
-                  className="flex-1 dark:text-black border border-slate-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400"
-                />
-              </div>
-            ))}
-          </div>
-          <div className="mt-4 p-4 bg-indigo-50 rounded-xl border border-indigo-100">
-            <p className="text-sm font-medium text-slate-700 mb-2">Same ID across platforms?</p>
-            <input
-              type="text"
-              placeholder="Shared user ID"
-              maxLength={40}
-              value={form.socialSameId}
-              onChange={(e) => handleSocialSameIdChange(e.target.value)}
-              className="w-full border dark:text-black border-indigo-200 rounded-lg px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-indigo-400 mb-3"
-            />
-            <p className="text-xs text-slate-500 mb-2">Select platforms to apply:</p>
-            <div className="flex gap-3 flex-wrap">
+          {/* ── SOCIAL MEDIA ──────────────────────────────────── */}
+          <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-4">
+            <label className="block text-sm font-semibold text-slate-700 mb-3">
+              Social Media Links{" "}
+              <span className="text-slate-400 font-normal">(Optional)</span>
+            </label>
+            <div className="flex flex-col gap-3">
               {SOCIAL_PLATFORMS.map((platform) => (
-                <button
-                  key={platform}
-                  type="button"
-                  onClick={() => handleSocialSameToggle(platform)}
-                  className={`flex items-center justify-center w-12 h-12 rounded-full border-2 transition ${form.socialSameSelected.includes(platform)
-                      ? "border-indigo-500 bg-indigo-500"
-                      : "border-slate-300 bg-white hover:border-indigo-400"
-                    }`}
-                >
-                  <SocialIcon name={platform} active={form.socialSameSelected.includes(platform)} />
-                </button>
+                <div key={platform} className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-xl bg-slate-50 border border-slate-200 flex items-center justify-center shrink-0">
+                    <SocialIcon name={platform} active={false} />
+                  </div>
+                  <input
+                    type="text"
+                    placeholder={`${platform} user ID`}
+                    maxLength={60}
+                    value={form.socials[platform]}
+                    onChange={(e) => setForm((f) => ({ ...f, socials: { ...f.socials, [platform]: e.target.value } }))}
+                    className="flex-1 dark:text-black border border-slate-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400"
+                  />
+                </div>
               ))}
             </div>
+            <div className="mt-4 p-4 bg-indigo-50 rounded-xl border border-indigo-100">
+              <p className="text-sm font-medium text-slate-700 mb-2">Same ID across platforms?</p>
+              <input
+                type="text"
+                placeholder="Shared user ID"
+                maxLength={40}
+                value={form.socialSameId}
+                onChange={(e) => handleSocialSameIdChange(e.target.value)}
+                className="w-full border dark:text-black border-indigo-200 rounded-lg px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-indigo-400 mb-3"
+              />
+              <p className="text-xs text-slate-500 mb-2">Select platforms to apply:</p>
+              <div className="flex gap-3 flex-wrap">
+                {SOCIAL_PLATFORMS.map((platform) => (
+                  <button
+                    key={platform}
+                    type="button"
+                    onClick={() => handleSocialSameToggle(platform)}
+                    className={`flex items-center justify-center w-12 h-12 rounded-full border-2 transition ${form.socialSameSelected.includes(platform)
+                        ? "border-indigo-500 bg-indigo-500"
+                        : "border-slate-300 bg-white hover:border-indigo-400"
+                      }`}
+                  >
+                    <SocialIcon name={platform} active={form.socialSameSelected.includes(platform)} />
+                  </button>
+                ))}
+              </div>
+            </div>
           </div>
+
+          {/* ── ERROR FEEDBACK ────────────────────────────────── */}
+          {saveError && (
+            <div className="bg-red-50 border border-red-200 rounded-xl p-3 text-sm text-red-700">
+              ⚠️ {saveError}
+            </div>
+          )}
+
+          {/* ── SAVE BUTTON ───────────────────────────────────── */}
+          <button
+            type="button"
+            onClick={handleSave}
+            disabled={saving}
+            className="w-full py-3 rounded-xl bg-accent text-white text-sm font-semibold hover:bg-indigo-700 transition disabled:opacity-60 flex items-center justify-center gap-2 shadow-md"
+          >
+            {saving ? (
+              <>
+                <svg className="animate-spin w-4 h-4" fill="none" viewBox="0 0 24 24">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z" />
+                </svg>
+                {isEditMode ? "Updating…" : "Saving…"}
+              </>
+            ) : isEditMode ? " Update Profile" : " Save Profile"}
+          </button>
+
+          {/* ── DELETE PROFILE SECTION ────────────────────────── */}
+          {isEditMode && (
+            <div className="rounded-2xl border border-red-100 bg-red-50/60 p-4">
+              <div className="flex items-start gap-3">
+                <div className="w-9 h-9 rounded-xl bg-red-100 flex items-center justify-center shrink-0 mt-0.5">
+                  <svg className="w-5 h-5 text-red-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M14.74 9l-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 01-2.244 2.077H8.084a2.25 2.25 0 01-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 00-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 013.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 00-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 00-7.5 0" />
+                  </svg>
+                </div>
+                <div className="flex-1">
+                  <p className="text-sm font-semibold text-red-700">Danger Zone</p>
+                  <p className="text-xs text-red-500 mt-0.5 leading-relaxed">
+                    Permanently delete your MLM profile. This cannot be undone and you will be logged out.
+                  </p>
+                  <button
+                    type="button"
+                    onClick={() => setShowDeleteModal(true)}
+                    className="mt-3 inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-white border border-red-300 text-red-600 text-xs font-semibold hover:bg-red-600 hover:text-white hover:border-red-600 transition shadow-sm"
+                  >
+                    <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M14.74 9l-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 01-2.244 2.077H8.084a2.25 2.25 0 01-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 00-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 013.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 00-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 00-7.5 0" />
+                    </svg>
+                    Delete My Profile
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* bottom spacing for mobile nav bars */}
+          <div className="h-6" />
         </div>
-
-        {/* ── ERROR FEEDBACK ────────────────────────────────── */}
-        {saveError && (
-          <div className="bg-red-50 border border-red-200 rounded-xl p-3 text-sm text-red-700">
-            ⚠️ {saveError}
-          </div>
-        )}
-
-        {/* ── SAVE BUTTON ───────────────────────────────────── */}
-        <button
-          type="button"
-          onClick={handleSave}
-          disabled={saving}
-          className="w-full py-3 rounded-xl bg-accent text-white text-sm font-semibold hover:bg-indigo-700 transition disabled:opacity-60 flex items-center justify-center gap-2 shadow-md"
-        >
-          {saving ? (
-            <>
-              <svg className="animate-spin w-4 h-4" fill="none" viewBox="0 0 24 24">
-                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z" />
-              </svg>
-              {isEditMode ? "Updating…" : "Saving…"}
-            </>
-          ) : isEditMode ? " Update Profile" : " Save Profile"}
-        </button>
-
-        {/* bottom spacing for mobile nav bars */}
-        <div className="h-6" />
       </div>
-    </div>
+    </>
   );
 }
