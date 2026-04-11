@@ -11,7 +11,7 @@ export default function MultiImagePicker({
   inputRef,
   companyGridCols = 4,
   thumbHeight = "h-10",
-  maxImages = 4, // ✅ max limit
+  maxImages = 7, // ✅ max limit
 }) {
   const [tab, setTab] = useState("company");
   const [open, setOpen] = useState(false);
@@ -22,11 +22,13 @@ export default function MultiImagePicker({
 
   const colClass = {
     3: "grid-cols-3",
-    4: "grid-cols-3",
-  }[companyGridCols] || "grid-cols-3";
+    4: "grid-cols-4",
+  }[companyGridCols] || "grid-cols-4";
 
   // ✅ total count
   const totalSelected = selectedLinks.length + customFiles.length;
+  console.log(totalSelected);
+  
   const isLimitReached = totalSelected >= maxImages;
 
   // ✅ auto close modal when limit reached (nice UX)

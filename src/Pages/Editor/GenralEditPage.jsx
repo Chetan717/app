@@ -130,11 +130,17 @@ function GeneralEditPage({
   const [Imagel2] = useImage(mlmProfile?.logoURLs?.[0] || "", "anonymous");
   const [Imagel3] = useImage(mlmProfile?.logoURLs?.[1] || "", "anonymous");
   const [Imagel4] = useImage(mlmProfile?.logoURLs?.[2] || "", "anonymous");
+
   const [ImagetopFrame] = useImage(selectedTopFrame?.value || "", "anonymous");
   const [Imagetop1] = useImage(topuplineURLs?.[0] || "", "anonymous");
   const [Imagetop2] = useImage(topuplineURLs?.[1] || "", "anonymous");
   const [Imagetop3] = useImage(topuplineURLs?.[2] || "", "anonymous");
   const [Imagetop4] = useImage(topuplineURLs?.[3] || "", "anonymous");
+  const [Imagetop5] = useImage(topuplineURLs?.[4] || "", "anonymous");
+  const [Imagetop6] = useImage(topuplineURLs?.[5] || "", "anonymous");
+  const [Imagetop7] = useImage(topuplineURLs?.[6] || "", "anonymous");
+  const [Imagetop8] = useImage(topuplineURLs?.[7] || "", "anonymous");
+
   const [ImageProfile] = useImage(
     mlmForm?.promoter?.name
       ? `${mlmForm?.promoter?.image}`
@@ -351,49 +357,50 @@ function GeneralEditPage({
             <Image image={Imagel2} x={3} y={2} width={25} height={25} />
             <Image image={Imagel3} x={260} y={2} width={25} height={25} />
             <Image image={Imagel4} x={290} y={2} width={25} height={25} />
+            {/* topupline */}
+            {/* topupline — auto-centered */}
+            {(() => {
+              const slots = [
+                { img: Imagetop1 },
+                { img: Imagetop2 },
+                { img: Imagetop3 },
+                { img: Imagetop4 },
+                { img: Imagetop5 },
+                { img: Imagetop6 },
+                { img: Imagetop7 },
+              ].filter((s) => s.img); // only slots with a loaded image
 
-            <Image image={ImagetopFrame} x={95} y={2} width={30} height={30} />
-            <Image image={ImagetopFrame} x={125} y={2} width={30} height={30} />
-            <Image image={ImagetopFrame} x={155} y={2} width={30} height={30} />
-            <Image image={ImagetopFrame} x={185} y={2} width={30} height={30} />
+              const SLOT_SIZE = 30;
+              const totalWidth = slots.length * SLOT_SIZE;
+              const extraOffset = slots.length === 7 ? -10 : 0; // ✅
+              const startX = (STAGE_WIDTH - totalWidth) / 2 + extraOffset;
 
-            <Image
-              onTap={() => setIsOpen(true)}
-              onClick={() => setIsOpen(true)}
-              image={Imagetop1}
-              x={101}
-              y={6}
-              width={18}
-              height={18}
-            />
-            <Image
-              onTap={() => setIsOpen(true)}
-              onClick={() => setIsOpen(true)}
-              image={Imagetop2}
-              x={131}
-              y={6}
-              width={18}
-              height={18}
-            />
-            <Image
-              onTap={() => setIsOpen(true)}
-              onClick={() => setIsOpen(true)}
-              image={Imagetop3}
-              x={161}
-              y={6}
-              width={18}
-              height={18}
-            />
-            <Image
-              onTap={() => setIsOpen(true)}
-              onClick={() => setIsOpen(true)}
-              image={Imagetop4}
-              x={191}
-              y={6}
-              width={18}
-              height={18}
-            />
-
+              return slots.map((slot, i) => {
+                const x = startX + i * SLOT_SIZE;
+                return (
+                  <React.Fragment key={i}>
+                    <Image
+                      image={ImagetopFrame}
+                      x={x}
+                      y={2}
+                      width={SLOT_SIZE}
+                      height={SLOT_SIZE}
+                    />
+                    <Image
+                      image={slot.img}
+                      x={x + 6}
+                      y={6}
+                      width={18}
+                      height={18}
+                      onTap={() => setIsOpen(true)}
+                      onClick={() => setIsOpen(true)}
+                    />
+                  </React.Fragment>
+                );
+              });
+            })()}
+            {/* topupline */}
+            {/* topupline */}
             {isSubGeneralType ? (
               <Image
                 ref={profileImageRef}

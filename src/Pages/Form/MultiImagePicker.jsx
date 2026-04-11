@@ -11,7 +11,7 @@ export default function MultiImagePicker({
   inputRef,
   companyGridCols = 4,
   thumbHeight = "h-10",
-  maxImages = 4, // ✅ max limit
+  maxImages = 7,
 }) {
   const [tab, setTab] = useState("company");
   const [open, setOpen] = useState(false);
@@ -25,11 +25,9 @@ export default function MultiImagePicker({
     4: "grid-cols-3",
   }[companyGridCols] || "grid-cols-3";
 
-  // ✅ total count
   const totalSelected = selectedLinks.length + customFiles.length;
   const isLimitReached = totalSelected >= maxImages;
 
-  // ✅ auto close modal when limit reached (nice UX)
   useEffect(() => {
     if (isLimitReached) {
       setTimeout(() => setOpen(false), 400);
@@ -41,7 +39,7 @@ export default function MultiImagePicker({
       {/* Open Picker Button */}
       <div
         onClick={() => setOpen(true)}
-        className="text-white flex gap-1 border justify-center items-center font-semibold bg-slate-100 p-3 rounded-xl w-full transition"
+        className="text-white flex gap-1 border justify-center items-center font-semibold bg-slate-100 p-3 rounded-xl w-full transition cursor-pointer"
       >
         <svg viewBox="0 0 20 20" fill="currentColor" className="w-4 h-4 text-accent">
           <path d="M4 5a2 2 0 012-2h2l1-1h2l1 1h2a2 2 0 012 2v9a2 2 0 01-2 2H6a2 2 0 01-2-2V5zm6 3a3 3 0 100 6 3 3 0 000-6z" />
@@ -174,10 +172,8 @@ export default function MultiImagePicker({
                       onChange={(e) => {
                         const files = Array.from(e.target.files || []);
                         if (!files.length) return;
-
                         const file = files[0];
                         if (totalSelected >= maxImages) return;
-
                         onAddCustomFiles([file]);
                         e.target.value = "";
                       }}
@@ -195,7 +191,6 @@ export default function MultiImagePicker({
                               alt=""
                               className={`w-full ${thumbHeight} object-contain rounded-lg`}
                             />
-
                             <button
                               type="button"
                               onClick={() => onRemoveCustomFile(i)}

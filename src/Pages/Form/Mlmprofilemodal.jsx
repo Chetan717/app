@@ -425,32 +425,23 @@ export default function MLMProfilePage() {
       };
 
       if (isEditMode) {
-        // ── Update existing doc ──────────────────────────────
         await updateDoc(doc(db, "mlmprofiles", existingDocId), profileData);
-
-        // ✅ Update localStorage with latest data
         localStorage.setItem(
           "mlmProfile",
           JSON.stringify({ id: existingDocId, ...profileData })
         );
       } else {
-        // ── Create new doc ───────────────────────────────────
         const newDoc = await addDoc(collection(db, "mlmprofiles"), {
           ...profileData,
           createdAt: serverTimestamp(),
         });
-
-        // ✅ Save new profile to localStorage so route guards work
         localStorage.setItem(
           "mlmProfile",
           JSON.stringify({ id: newDoc.id, ...profileData })
         );
       }
 
-      // ✅ Toast on screen
       toast.success(isEditMode ? "Profile updated successfully!" : "Profile saved successfully!");
-
-      // ✅ Reload after short delay so toast is visible
       setTimeout(() => window.location.reload(), 1000);
 
     } catch (err) {
@@ -624,7 +615,7 @@ export default function MLMProfilePage() {
                       <button
                         type="button"
                         onClick={(e) => { e.stopPropagation(); handleRemoveProfileImage(idx); }}
-                        className="px-2 py-1 text-xs rounded-lg bg-red-50 border border-red-200 text-red-600 hover:bg-red-100 transition"
+                      className=" w-4 h-4 rounded-full bg-red-500 text-white text-xs flex items-center justify-center shadow "
                       >
                         ✕
                       </button>
@@ -668,13 +659,30 @@ export default function MLMProfilePage() {
             Topup Line Images
           </label>
           <div className="flex flex-col gap-2 items-center">
+
+            {/* ✅ Selected topup images with deselect button */}
             {form.topupSelectedLinks.length > 0 && (
               <div className="flex gap-2 flex-wrap justify-center">
                 {form.topupSelectedLinks.map((link, i) => (
-                  <img key={i} src={link} alt="Topup" className="w-14 h-14 rounded-full object-contain border-2 border bg-slate-100" />
+                  <div key={i} className="relative group">
+                    <img
+                      src={link}
+                      alt="Topup"
+                      className="w-14 h-14 rounded-full object-contain border-2 border bg-slate-100"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => handleTopupToggleLink(link)}
+                      className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-red-500 text-white text-xs flex items-center justify-center shadow "
+                      title="Deselect"
+                    >
+                      ✕
+                    </button>
+                  </div>
                 ))}
               </div>
             )}
+
             <MultiImagePicker
               companyImages={topuplines}
               selectedLinks={form.topupSelectedLinks}

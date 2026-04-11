@@ -245,7 +245,7 @@ export default function SalesExecutiveForm() {
 
   const toggleLink = (link) => {
     setSelectedLinks((prev) =>
-      prev.includes(link) ? prev.filter((l) => l !== link) : [...prev, link]
+      prev.includes(link) ? prev.filter((l) => l !== link) : [...prev, link],
     );
   };
 
@@ -290,13 +290,8 @@ export default function SalesExecutiveForm() {
 
   return (
     <div className="w-full mx-auto p-2 pb-10 space-y-4">
-
       {/* ── Tabs ── */}
-      <Tabs
-        selectedKey={tab}
-        onSelectionChange={setTab}
-        className="w-full"
-      >
+      <Tabs selectedKey={tab} onSelectionChange={setTab} className="w-full">
         <Tabs.ListContainer>
           <Tabs.List
             aria-label="Form type"
@@ -333,12 +328,24 @@ export default function SalesExecutiveForm() {
               {selectedLinks?.length > 0 && (
                 <div className="flex gap-2 flex-wrap justify-center">
                   {selectedLinks?.map((link, i) => (
-                    <img
-                      key={i}
-                      src={link}
-                      alt="Logo"
-                      className="w-14 h-14 rounded-full object-contain border-2 border bg-slate-100"
-                    />
+                    <div key={i} className="relative group">
+                      <img
+                        src={link}
+                        alt="Logo"
+                        className="w-14 h-14 rounded-full object-contain border-2 border bg-slate-100"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => {
+                          toggleLink(link);
+                          clearError("topupline");
+                        }}
+                        className="absolute -top-1 -right-1 w-5 h-5 rounded-full bg-red-500 text-white text-xs flex items-center justify-center shadow"
+                        title="Deselect"
+                      >
+                        ✕
+                      </button>
+                    </div>
                   ))}
                 </div>
               )}
