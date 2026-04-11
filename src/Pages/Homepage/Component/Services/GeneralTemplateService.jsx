@@ -42,7 +42,7 @@ export const fetchGeneralTemplates = async (groupIndex) => {
         where("Active", "==", true),
         where("Launched", "==", true),
         orderBy("serial"),
-        limit(4),
+        // limit(10),
       );
 
       const snapshot = await getDocs(q);
