@@ -4,11 +4,12 @@ import { Signup } from "./Auth/Signup";
 import { Forgetpin } from "./Auth/ForgetPin";
 import { Logout } from "./Auth/Logout";
 import ProtectedRoute from "./Auth/ProtectedR";
+import PublicRoute from "./Auth/PublicRoute"; // ✅ new
 import Layout from "./Layout";
 import MainSubscription from "./Pages/Subscription/MainSubscription";
 import MlmProfile from "./Pages/Mymlmprofile/MlmProfile";
 import ProtectMlmProfile from "./Pages/SelectCompany/ProtectMlmProfile";
-import ProtectSelectComp from "./Pages/SelectCompany/ProtectSelectComp"; // ✅ new
+import ProtectSelectComp from "./Pages/SelectCompany/ProtectSelectComp";
 import SelectComp from "./Pages/SelectCompany/SelectComp";
 import { Routes, Route, useNavigate } from "react-router";
 import AllTemplates from "./Pages/Homepage/Component/AllTemplates";
@@ -23,32 +24,43 @@ function App() {
 
   useEffect(() => {
     const handleBackPressed = () => {
-      // Navigate back in React Router history
       navigate(-1);
     };
-
-    window.addEventListener('webviewBackPressed', handleBackPressed);
-
+    window.addEventListener("webviewBackPressed", handleBackPressed);
     return () => {
-      window.removeEventListener('webviewBackPressed', handleBackPressed);
+      window.removeEventListener("webviewBackPressed", handleBackPressed);
     };
   }, [navigate]);
 
   return (
     <Routes>
 
-      {/* ── Public auth routes ── */}
-      <Route path="/login" element={<Login />} />
-      <Route path="/signup" element={<Signup />} />
+      {/* ── Public auth routes ── only accessible when NOT logged in */}
+      <Route
+        path="/login"
+        element={
+          <PublicRoute>
+            <Login />
+          </PublicRoute>
+        }
+      />
+      <Route
+        path="/signup"
+        element={
+          <PublicRoute>
+            <Signup />
+          </PublicRoute>
+        }
+      />
       <Route path="/forgetpin" element={<Forgetpin />} />
       <Route path="/logout" element={<Logout />} />
 
-      {/* ── Company selection ── blocked if profile already exists */}
+      {/* ── Company selection ── */}
       <Route
         path="/selectcomp"
         element={
           <ProtectedRoute>
-            <ProtectSelectComp>  {/* ✅ redirects to "/" if mlmProfile exists */}
+            <ProtectSelectComp>
               <Layout>
                 <SelectComp />
               </Layout>
@@ -57,6 +69,7 @@ function App() {
         }
       />
 
+      {/* ── Protected routes ── */}
       <Route
         path="/"
         element={
@@ -85,31 +98,28 @@ function App() {
           <ProtectedRoute>
             <ProtectMlmProfile>
               <Layout><MlmProfile /></Layout>
-          
             </ProtectMlmProfile>
           </ProtectedRoute>
         }
       />
+
       <Route
         path="/mlmform"
         element={
           <ProtectedRoute>
             <ProtectMlmProfile>
-              <Layout>
-                <Mainform/>
-                </Layout>
+              <Layout><Mainform /></Layout>
             </ProtectMlmProfile>
           </ProtectedRoute>
         }
       />
-       <Route
+
+      <Route
         path="/editor"
         element={
           <ProtectedRoute>
             <ProtectMlmProfile>
-              <Layout>
-              <MainEditor/>
-                </Layout>
+              <Layout><MainEditor /></Layout>
             </ProtectMlmProfile>
           </ProtectedRoute>
         }
@@ -121,7 +131,7 @@ function App() {
           <ProtectedRoute>
             <ProtectMlmProfile>
               <Layout>
-                <Test/>
+                <Test />
                 <MainSubscription />
               </Layout>
             </ProtectMlmProfile>
@@ -129,19 +139,17 @@ function App() {
         }
       />
 
- <Route
+      <Route
         path="/profile"
         element={
           <ProtectedRoute>
             <ProtectMlmProfile>
-              <Layout>
-               
-                <Myprofile/>
-              </Layout>
+              <Layout><Myprofile /></Layout>
             </ProtectMlmProfile>
           </ProtectedRoute>
         }
       />
+
     </Routes>
   );
 }

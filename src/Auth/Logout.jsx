@@ -1,11 +1,7 @@
 import { useEffect } from "react";
-import { useNavigate } from "react-router";
 
 export function Logout() {
-  const navigate = useNavigate();
-
   useEffect(() => {
-    // Clear all localStorage items used in the app
     localStorage.removeItem("selectedCompany");
     localStorage.removeItem("mlmProfile");
     localStorage.removeItem("theme");
@@ -13,9 +9,9 @@ export function Logout() {
     localStorage.removeItem("mlmform");
     localStorage.removeItem("selType");
 
-    // Navigate to login page
-    navigate("/login");
-  }, [navigate]);
+    // Hard redirect — forces full re-render, clears all stale state
+    window.location.replace("/login");
+  }, []);
 
   return (
     <div className="flex items-center justify-center min-h-screen">
