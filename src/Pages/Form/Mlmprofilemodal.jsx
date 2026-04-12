@@ -126,7 +126,7 @@ function DeleteConfirmModal({ userMobile, onConfirm, onCancel, deleting }) {
           </div>
           <h2 className="text-lg font-bold text-slate-800 dark:text-white">Delete Profile?</h2>
           <p className="text-sm text-slate-500 dark:text-slate-400 leading-relaxed">
-            This action is <span className="font-semibold text-red-500">permanent</span> and cannot be undone.
+            This action is <span className="font-semibold text-red-500">Permanent</span> and cannot be undone.
             Your entire MLM profile will be deleted.
           </p>
         </div>
@@ -138,7 +138,7 @@ function DeleteConfirmModal({ userMobile, onConfirm, onCancel, deleting }) {
           </label>
           <input
             type="tel"
-            placeholder={`Enter ${userMobile}`}
+            placeholder={`Enter Mobile Number`}
             value={inputMobile}
             onChange={(e) => setInputMobile(e.target.value)}
             className={`w-full border rounded-xl px-4 py-2.5 text-sm font-mono tracking-wider focus:outline-none focus:ring-2 transition dark:bg-zinc-800 dark:text-white
@@ -633,7 +633,7 @@ export default function MLMProfilePage() {
         {/* Page header */}
         <div className="mb-2">
           <h1 className="text-md dark:text-white font-bold text-slate-800">
-            {isEditMode ? "Edit Profile" : "Create Profile"}
+            {isEditMode ? "Profile" : "Create Profile"}
           </h1>
         </div>
 
@@ -917,7 +917,7 @@ export default function MLMProfilePage() {
                   </svg>
                 </div>
                 <div className="flex-1">
-                  <p className="text-sm font-semibold text-red-700">Danger Zone</p>
+                  {/* <p className="text-sm font-semibold text-red-700">Danger Zone</p> */}
                   <p className="text-xs text-red-500 mt-0.5 leading-relaxed">
                     Permanently delete your MLM profile. This cannot be undone and you will be logged out.
                   </p>

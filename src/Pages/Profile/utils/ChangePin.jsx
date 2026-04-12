@@ -167,7 +167,7 @@ function ChangePin({ show, setChngePin }) {
 
                 {/* Confirm PIN */}
                 <div className="flex flex-col gap-2 items-center w-full">
-                  <Label className="font-bold text-accent text-sm">
+                  <Label className="font-bold  text-accent text-sm">
                     Confirm New Pin
                   </Label>
                   <InputOTP
@@ -206,7 +206,7 @@ function ChangePin({ show, setChngePin }) {
                 onClick={onChangePin}
                 isLoading={loading}
               >
-                {loading ? "Saving..." : "Save New PIN"}
+                {loading ? "Saving..." : "Create New Pin"}
               </Button>
 
               {/* Cancel */}

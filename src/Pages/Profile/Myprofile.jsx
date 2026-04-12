@@ -173,6 +173,7 @@ function Myprofile() {
       
       <Button
         variant="outline"
+        onClick={() => navigate("/logout")}
         className="w-[95%] mt-6 text-red-500 border-red-300"
       >
         Logout

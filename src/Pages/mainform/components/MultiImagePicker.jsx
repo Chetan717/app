@@ -26,9 +26,7 @@ export default function MultiImagePicker({
   }[companyGridCols] || "grid-cols-4";
 
   // ✅ total count
-  const totalSelected = selectedLinks.length + customFiles.length;
-  console.log(totalSelected);
-  
+  const totalSelected = selectedLinks.length + customFiles.length;  
   const isLimitReached = totalSelected >= maxImages;
 
   // ✅ auto close modal when limit reached (nice UX)
