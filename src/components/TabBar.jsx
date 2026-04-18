@@ -54,7 +54,7 @@ export default function TabBar({
 
   return (
     <>
-      {location.pathname === "/Editor"|| location.pathname === "/profile" ? null : (
+      {location.pathname === "/Editor"|| location.pathname === "/profile" || location.pathname === "/subscription" ? null : (
         <header className="sticky bottom-0 z-20 h-16 flex items-center px-2 gap-1 bg-white/80 dark:bg-[#0f1117]/80 backdrop-blur-md border-b border-gray-100 dark:border-gray-800/70"></header>
       )}
     </>
