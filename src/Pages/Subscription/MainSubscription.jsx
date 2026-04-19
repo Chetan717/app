@@ -1,499 +1,151 @@
-import React, { useEffect, useState, useRef } from "react";
+import React, { useEffect, useState, useCallback } from "react";
 import { Swiper, SwiperSlide } from "swiper/react";
 import { Pagination, Autoplay } from "swiper/modules";
-import { Modal, Button, Chip, Skeleton } from "@heroui/react";
+import { Skeleton } from "@heroui/react";
 import { db } from "../../../Firebase";
-import { doc, getDoc } from "firebase/firestore";
+import {
+  doc,
+  getDoc,
+  collection,
+  query,
+  where,
+  getDocs,
+} from "firebase/firestore";
+import { CheckoutModal } from "./CheckoutModal";
+import { PlanModal } from "./PlanModal";
 import "swiper/css";
 import "swiper/css/pagination";
 
-// ─── Helper: convert Firestore timestamp object ───────────────────────────────
-const formatTimestamp = (ts) => {
+// ─── Helpers ──────────────────────────────────────────────────────────────────
+const formatDate = (ts) => {
   if (!ts) return "N/A";
-  const date = ts?.seconds ? new Date(ts.seconds * 1000) : new Date(ts);
-  return date.toLocaleDateString("en-IN", {
+  const d = ts?.seconds ? new Date(ts.seconds * 1000) : new Date(ts);
+  return d.toLocaleDateString("en-IN", {
     day: "2-digit",
     month: "short",
     year: "numeric",
   });
 };
 
-// ─────────────────────────────────────────────────────────────────────────────
-// Razorpay Payment Function — ready to wire up later, not called yet
-// ─────────────────────────────────────────────────────────────────────────────
-const initiateRazorpayPayment = ({
-  plan,
-  couponCode,
-  userInfo,
-  onSuccess,
-  onFailure,
-}) => {
-  const options = {
-    key: process.env.REACT_APP_RAZORPAY_KEY_ID, // set in .env
-    amount: (plan.PlanAmount ?? 0) * 100, // Razorpay expects paise
-    currency: "INR",
-    name: "Subscription",
-    description: plan.PlanName || "Plan Purchase",
-    handler: function (response) {
-      // response contains: razorpay_payment_id, razorpay_order_id, razorpay_signature
-      if (onSuccess) onSuccess(response);
-    },
-    prefill: {
-      name: userInfo?.name || "",
-      email: userInfo?.email || "",
-      contact: userInfo?.phone || "",
-    },
-    notes: {
-      plan_id: plan.id || "",
-      coupon_code: couponCode || "",
-    },
-    theme: {
-      color: "var(--color-accent, #6366f1)",
-    },
-    modal: {
-      ondismiss: function () {
-        if (onFailure) onFailure({ reason: "Payment dismissed by user" });
-      },
-    },
-  };
-
-  if (!window.Razorpay) {
-    console.error("Razorpay SDK not loaded. Add the script tag to index.html.");
-    return;
-  }
-
-  const rzp = new window.Razorpay(options);
-  rzp.on("payment.failed", function (response) {
-    if (onFailure) onFailure(response.error);
-  });
-
-  rzp.open(); // ← This line triggers the Razorpay popup
+const daysLeft = (expiryStr) => {
+  const today = new Date();
+  const expiry = new Date(expiryStr);
+  const diff = Math.ceil((expiry - today) / (1000 * 60 * 60 * 24));
+  return diff;
 };
 
-// ─────────────────────────────────────────────────────────────────────────────
-// Checkout Modal
-// ─────────────────────────────────────────────────────────────────────────────
-export function CheckoutModal({ plan, isOpen, setIsOpen, onBack }) {
-  const [coupon, setCoupon] = useState(["", "", "", "", "", ""]);
-  const [couponStatus, setCouponStatus] = useState(null); // null | "valid" | "invalid"
-  const inputRefs = useRef([]);
-
-  if (!plan) return null;
-
-  const today = new Date();
-  const formatDate = (date) =>
-    date.toLocaleDateString("en-GB", {
-      day: "2-digit",
-      month: "2-digit",
-      year: "numeric",
-    });
-
-  const expiryDate = new Date(today);
-  expiryDate.setDate(expiryDate.getDate() + (plan.Day_value ?? 0));
-
-  const couponString = coupon.join("");
-  const isCouponFilled = couponString.length === 6;
-
-  // OTP-style coupon handlers
-  const handleCouponChange = (val, idx) => {
-    const char = val
-      .replace(/[^a-zA-Z0-9]/g, "")
-      .toUpperCase()
-      .slice(-1);
-    const next = [...coupon];
-    next[idx] = char;
-    setCoupon(next);
-    setCouponStatus(null);
-    if (char && idx < 5) inputRefs.current[idx + 1]?.focus();
-  };
-
-  const handleCouponKeyDown = (e, idx) => {
-    if (e.key === "Backspace" && !coupon[idx] && idx > 0) {
-      inputRefs.current[idx - 1]?.focus();
-    }
-  };
-
-  const handleCouponPaste = (e) => {
-    const text = e.clipboardData
-      .getData("text")
-      .replace(/[^a-zA-Z0-9]/g, "")
-      .toUpperCase()
-      .slice(0, 6);
-    if (text.length === 6) {
-      setCoupon(text.split(""));
-      setCouponStatus(null);
-      inputRefs.current[5]?.focus();
-    }
-    e.preventDefault();
-  };
-
-  const handleApplyCoupon = () => {
-    // TODO: validate against Firestore/API — mocked for now
-    if (couponString === "TEST01") {
-      setCouponStatus("valid");
-    } else {
-      setCouponStatus("invalid");
-    }
-  };
-
-  const handleClearCoupon = () => {
-    setCoupon(["", "", "", "", "", ""]);
-    setCouponStatus(null);
-    inputRefs.current[0]?.focus();
-  };
-
-  const handleConfirmPurchase = () => {
-    initiateRazorpayPayment({
-      plan,
-      couponCode: isCouponFilled ? couponString : "",
-      userInfo: {}, // TODO: pass real user info here
-      onSuccess: (response) => {
-        console.log("✅ Payment success:", response);
-        // TODO: update Firestore subscription, show success screen
-      },
-      onFailure: (error) => {
-        console.error("❌ Payment failed:", error);
-        // TODO: show error toast
-      },
-    });
-  };
+// ─── Active Subscription Card ─────────────────────────────────────────────────
+function ActiveSubscriptionCard({ sub }) {
+  const days = daysLeft(sub.expirydate);
+  const totalDays = sub.duration ?? 1;
+  const usedDays = totalDays - days;
+  const progress = Math.min(100, Math.max(0, (usedDays / totalDays) * 100));
 
   return (
-    <Modal isOpen={isOpen}>
-      <Modal.Backdrop>
-        <Modal.Container>
-          <Modal.Dialog className="max-w-md rounded-2xl border dark:border-white/10 border-black/10 shadow-2xl bg-white dark:bg-[#0f1117] overflow-hidden">
-            <Modal.Body className="space-y-4 pt-0">
-              {/* ── Plan card ── */}
-              <div className="rounded-xl border border-accent/25 bg-accent/5 p-4 flex items-center gap-3">
-                <div className="w-11 h-11 rounded-xl bg-accent/10 flex items-center justify-center text-xl shrink-0">
-                  📋
-                </div>
-                <div className="flex-1 min-w-0">
-                  <p className="font-bold dark:text-white text-gray-900 text-sm truncate">
-                    {plan.PlanName || "Unnamed Plan"}
-                  </p>
-                  <p className="text-[11px] text-gray-400 mt-0.5">
-                    {plan.Type || "—"} &nbsp;·&nbsp; {plan.Day_value ?? 0} Days
-                  </p>
-                </div>
-                <p className="text-lg font-extrabold text-accent shrink-0">
-                  ₹{plan.PlanAmount ?? 0}
-                </p>
-              </div>
+    <div className="mx-3 space-y-4">
+      {/* Header badge */}
+      <div className="flex items-center gap-2">
+        <span className="flex h-2 w-2 rounded-full bg-green-400 animate-pulse" />
+        <p className="text-xs font-semibold text-green-500 uppercase tracking-wider">
+          Active Subscription
+        </p>
+      </div>
 
-              {/* ── Validity strip ── */}
-              <div className="rounded-xl bg-black/5 dark:bg-white/5 border dark:border-white/10 border-black/10 px-4 py-3 flex items-center justify-between gap-2">
-                <div className="text-center">
-                  <p className="text-[10px] text-gray-400 uppercase tracking-wide mb-0.5">
-                    Start
-                  </p>
-                  <p className="text-xs font-semibold dark:text-white text-gray-800">
-                    {formatDate(today)}
-                  </p>
-                </div>
-                <div className="flex-1 flex flex-col items-center gap-0.5">
-                  <div className="w-full flex items-center gap-1">
-                    <div className="flex-1 h-px bg-accent/30" />
-                    <div className="w-2 h-2 rounded-full bg-accent" />
-                    <div className="flex-1 h-px bg-accent/30" />
-                  </div>
-                  <p className="text-[10px] text-accent font-semibold">
-                    {plan.Day_value ?? 0} Days
-                  </p>
-                </div>
-                <div className="text-center">
-                  <p className="text-[10px] text-gray-400 uppercase tracking-wide mb-0.5">
-                    Expiry
-                  </p>
-                  <p className="text-xs font-semibold text-red-500 dark:text-red-400">
-                    {formatDate(expiryDate)}
-                  </p>
-                </div>
-              </div>
+      {/* Main card */}
+      <div className="relative rounded-2xl overflow-hidden border dark:border-white/10 border-black/10 shadow-lg dark:shadow-black/40">
+        {/* Top gradient bar */}
+        <div className="h-1.5 w-full bg-gradient-to-r from-accent via-purple-500 to-accent" />
 
-              {/* ── Coupon section ── */}
-              <div className="space-y-3">
-                <div className="flex items-center gap-2">
-                  <div className="flex-1 h-px dark:bg-white/10 bg-black/10" />
-                  <p className="text-[10px] text-gray-400 uppercase tracking-widest flex items-center gap-1">
-                    <span>🏷️</span> Coupon Code
-                  </p>
-                  <div className="flex-1 h-px dark:bg-white/10 bg-black/10" />
-                </div>
-
-                {/* 6-box OTP input */}
-                <div
-                  className="flex items-center justify-center gap-2"
-                  onPaste={handleCouponPaste}
-                >
-                  {coupon.map((char, idx) => (
-                    <input
-                      key={idx}
-                      ref={(el) => (inputRefs.current[idx] = el)}
-                      type="text"
-                      inputMode="text"
-                      maxLength={1}
-                      value={char}
-                      onChange={(e) => handleCouponChange(e.target.value, idx)}
-                      onKeyDown={(e) => handleCouponKeyDown(e, idx)}
-                      className={[
-                        "w-10 h-11 text-center text-sm font-bold rounded-xl border-2 outline-none",
-                        "transition-all duration-150 dark:bg-white/5 bg-black/5",
-                        "dark:text-white text-gray-900 focus:border-accent focus:bg-accent/5",
-                        couponStatus === "valid"
-                          ? "border-green-500 bg-green-50 dark:bg-green-900/20 text-green-600 dark:text-green-400"
-                          : couponStatus === "invalid"
-                            ? "border-red-400 bg-red-50 dark:bg-red-900/20 text-red-500"
-                            : "dark:border-white/10 border-black/15",
-                      ].join(" ")}
-                    />
-                  ))}
-                </div>
-
-                {/* Status + actions */}
-                <div className="flex items-center justify-between px-1 min-h-[20px]">
-                  <span className="text-xs font-medium">
-                    {couponStatus === "valid" && (
-                      <span className="text-green-500 flex items-center gap-1">
-                        ✅ Coupon applied!
-                      </span>
-                    )}
-                    {couponStatus === "invalid" && (
-                      <span className="text-red-500 flex items-center gap-1">
-                        ❌ Invalid coupon code
-                      </span>
-                    )}
-                  </span>
-                  <div className="flex items-center gap-3">
-                    {isCouponFilled && couponStatus !== "valid" && (
-                      <button
-                        onClick={handleApplyCoupon}
-                        className="text-xs font-bold text-accent underline underline-offset-2"
-                      >
-                        Apply
-                      </button>
-                    )}
-                    {couponString && (
-                      <button
-                        onClick={handleClearCoupon}
-                        className="text-xs text-gray-400 hover:text-gray-600 transition-colors"
-                      >
-                        Clear
-                      </button>
-                    )}
-                  </div>
-                </div>
-              </div>
-
-              {/* ── Price breakdown ── */}
-              <div className="rounded-xl bg-black/5 dark:bg-white/5 border dark:border-white/10 border-black/10 p-4 space-y-2">
-                <div className="flex justify-between text-sm">
-                  <span className="text-gray-500 dark:text-gray-400">
-                    Plan Amount
-                  </span>
-                  <span className="dark:text-white text-gray-800 font-medium">
-                    ₹{plan.PlanAmount ?? 0}
-                  </span>
-                </div>
-                {couponStatus === "valid" && (
-                  <div className="flex justify-between text-sm">
-                    <span className="text-green-500">Coupon Discount</span>
-                    <span className="text-green-500 font-medium">— ₹0</span>
-                  </div>
-                )}
-                <div className="flex justify-between text-sm">
-                  <span className="text-gray-500 dark:text-gray-400">
-                    GST / Taxes
-                  </span>
-                  <span className="dark:text-white text-gray-800 font-medium">
-                    Included
-                  </span>
-                </div>
-                <div className="h-px dark:bg-white/10 bg-black/10 my-1" />
-                <div className="flex justify-between text-base font-bold">
-                  <span className="dark:text-white text-gray-900">
-                    Total Payable
-                  </span>
-                  <span className="text-accent">₹{plan.PlanAmount ?? 0}</span>
-                </div>
-              </div>
-            </Modal.Body>
-
-            {/* Footer */}
-            <Modal.Footer className="flex flex-col gap-2 pt-2">
-              <button
-                onClick={handleConfirmPurchase}
-                className="w-full py-3.5 rounded-xl font-bold text-sm text-white bg-accent
-                  hover:opacity-90 active:scale-[0.98] transition-all duration-150
-                  flex items-center justify-center gap-2 shadow-lg shadow-accent/25"
-              >
-                <span>🔒</span>
-                Confirm Purchase &nbsp;·&nbsp; ₹{plan.PlanAmount ?? 0}
-              </button>
-
-              <button
-                onClick={() => {
-                  setIsOpen(false);
-                  if (onBack) onBack();
-                }}
-                className="w-full py-2.5 rounded-xl text-sm font-medium
-                  dark:text-gray-400 text-gray-500
-                  dark:hover:bg-white/5 hover:bg-black/5
-                  transition-colors duration-150"
-              >
-                ← Back to Plan Details
-              </button>
-
-              <p className="text-center text-[10px] text-gray-400 pb-1">
-                🔐 Secured by Razorpay &nbsp;·&nbsp; 256-bit SSL Encryption
+        <div className="p-5 space-y-5 dark:bg-[#0f1117] bg-white">
+          {/* Plan name + type */}
+          <div className="flex items-start justify-between gap-3">
+            <div>
+              <p className="text-xl font-extrabold dark:text-white text-gray-900">
+                {sub.plan || "Subscription"}
               </p>
-            </Modal.Footer>
-          </Modal.Dialog>
-        </Modal.Container>
-      </Modal.Backdrop>
-    </Modal>
-  );
-}
+              <p className="text-xs text-gray-400 mt-0.5 uppercase tracking-wide">
+                {sub.planType || "Plan"}
+              </p>
+            </div>
+            <div className="bg-green-100 dark:bg-green-900/30 border border-green-300 dark:border-green-500/40 rounded-full px-3 py-1">
+              <p className="text-[11px] font-bold text-green-600 dark:text-green-400">
+                ✓ Active
+              </p>
+            </div>
+          </div>
 
-// ─── Plan Details Modal ───────────────────────────────────────────────────────
-export function PlanModal({
-  plan,
-  isOpen,
-  openA,
-  setOpenA,
-  onProceedToCheckout,
-}) {
-  if (!plan) return null;
-
-  const details = [
-    { label: "Plan Amount", value: `₹${plan.PlanAmount ?? 0}` },
-    { label: "Duration", value: `${plan.Day_value} Days` || "—" },
-    { label: "Type", value: plan.Type || "—" },
-    { label: "Downloads", value: plan.downloads ?? 0 },
-  ];
-
-  const today = new Date();
-  const formatDate = (date) =>
-    date.toLocaleDateString("en-GB", {
-      day: "2-digit",
-      month: "2-digit",
-      year: "numeric",
-    });
-
-  const expiryDate = new Date(today);
-  expiryDate.setDate(expiryDate.getDate() + (plan.Day_value ?? 0));
-
-  const startStr = formatDate(today);
-  const expiryStr = formatDate(expiryDate);
-
-  return (
-    <Modal isOpen={openA}>
-      <Modal.Backdrop>
-        <Modal.Container>
-          <Modal.Dialog className="max-w-lg rounded-2xl border dark:border-white/10 border-black/10 shadow-2xl bg-white dark:bg-[#0f1117]">
-            <Modal.Header>
-              <div className="flex flex-col gap-1">
-                <span className="text-xl font-bold dark:text-white text-gray-900">
-                  {plan.PlanName || "Unnamed Plan"}
-                </span>
-                <Chip
-                  size="sm"
-                  variant="flat"
-                  color={plan.Launch ? "success" : "danger"}
-                  className="w-fit"
-                >
-                  {plan.Launch ? "Active" : "Inactive"}
-                </Chip>
+          {/* Date strip */}
+          <div className="flex items-center justify-between gap-2 rounded-xl dark:bg-white/5 bg-black/5 px-4 py-3">
+            <div className="text-center">
+              <p className="text-[10px] text-gray-400 uppercase mb-0.5">Start</p>
+              <p className="text-xs font-bold dark:text-white text-gray-800">
+                {formatDate(sub.startdate)}
+              </p>
+            </div>
+            <div className="flex-1 flex flex-col items-center gap-1">
+              <div className="relative w-full h-1.5 rounded-full dark:bg-white/10 bg-black/10 overflow-hidden">
+                <div
+                  className="absolute left-0 top-0 h-full rounded-full bg-gradient-to-r from-accent to-purple-500 transition-all"
+                  style={{ width: `${progress}%` }}
+                />
               </div>
-            </Modal.Header>
+              <p className="text-[10px] text-accent font-semibold">
+                {days > 0 ? `${days} days left` : "Expired"}
+              </p>
+            </div>
+            <div className="text-center">
+              <p className="text-[10px] text-gray-400 uppercase mb-0.5">Expiry</p>
+              <p className="text-xs font-bold text-red-500 dark:text-red-400">
+                {formatDate(sub.expirydate)}
+              </p>
+            </div>
+          </div>
 
-            <Modal.Body className="space-y-4">
-              {plan.Description && (
-                <p className="text-sm dark:text-gray-400 text-gray-600 border-l-2 border-accent pl-3">
-                  {plan.Description}
-                </p>
-              )}
-
-              <div className="grid grid-cols-2 gap-3">
-                {details?.map((detail) => (
-                  <div
-                    key={detail.label}
-                    className="rounded-xl p-3 bg-black/5 dark:bg-white/5 border dark:border-white/10 border-black/10"
-                  >
-                    <p className="text-xs text-gray-400 uppercase mb-1">
-                      {detail.label}
-                    </p>
-                    <p className="font-semibold text-sm dark:text-white text-gray-900">
-                      {detail.value}
-                    </p>
-                  </div>
-                ))}
-              </div>
-
-              {/* If Purchased Today banner */}
-              <div className="rounded-xl border border-accent dark:bg-slate-200 bg-slate-200 overflow-hidden">
-                <div className="flex items-center gap-2 px-3 py-2 border-b border-accent dark:bg-accent bg-accent">
-                  <span className="text-base">🛒</span>
-                  <p className="text-xs font-semibold text-white uppercase tracking-wide">
-                    If Purchased Today
-                  </p>
-                </div>
-                <div className="flex items-center bg-slate-100 justify-between px-4 py-3 gap-3">
-                  <div className="flex flex-col items-center gap-0.5">
-                    <p className="text-[10px] text-gray-400 uppercase tracking-wide">
-                      Start Date
-                    </p>
-                    <p className="text-sm font-bold dark:text-white text-gray-800">
-                      {startStr}
-                    </p>
-                  </div>
-                  <div className="flex flex-col items-center gap-1 flex-1">
-                    <div className="flex items-center w-full gap-1">
-                      <div className="flex-1 h-px bg-slate-300" />
-                      <span className="text-accent text-xs">▶</span>
-                    </div>
-                    <span className="text-[10px] text-accent font-medium whitespace-nowrap">
-                      {plan.Day_value ?? 0} Days
-                    </span>
-                  </div>
-                  <div className="flex flex-col items-center gap-0.5">
-                    <p className="text-[10px] text-gray-400 uppercase tracking-wide">
-                      Expiry Date
-                    </p>
-                    <p className="text-sm font-bold dark:text-red-400 text-red-500">
-                      {expiryStr}
-                    </p>
-                  </div>
-                </div>
-              </div>
-            </Modal.Body>
-
-            <Modal.Footer>
-              <Button onClick={() => setOpenA(false)} variant="secondary">
-                Close
-              </Button>
-              <Button
-                color="primary"
-                onClick={() => {
-                  setOpenA(false);
-                  if (onProceedToCheckout) onProceedToCheckout();
-                }}
+          {/* Stats row */}
+          <div className="grid grid-cols-3 gap-3">
+            {[
+              { label: "Downloads", value: sub.download ?? 0, icon: "⬇️" },
+              { label: "Duration", value: `${sub.duration ?? 0}d`, icon: "📅" },
+              {
+                label: "Amount Paid",
+                value: `₹${sub.PaymentAmount ?? 0}`,
+                icon: "💳",
+              },
+            ].map((s) => (
+              <div
+                key={s.label}
+                className="rounded-xl dark:bg-white/5 bg-black/5 border dark:border-white/10 border-black/10 p-3 text-center"
               >
-                Subscribe Now →
-              </Button>
-            </Modal.Footer>
-          </Modal.Dialog>
-        </Modal.Container>
-      </Modal.Backdrop>
-    </Modal>
+                <p className="text-base mb-1">{s.icon}</p>
+                <p className="text-sm font-bold dark:text-white text-gray-900">
+                  {s.value}
+                </p>
+                <p className="text-[10px] text-gray-400 mt-0.5">{s.label}</p>
+              </div>
+            ))}
+          </div>
+
+          {/* UTR / Order ID */}
+          {sub.UTRID && (
+            <div className="rounded-xl dark:bg-white/5 bg-black/5 border dark:border-white/10 border-black/10 px-3 py-2 flex items-center justify-between">
+              <p className="text-[10px] text-gray-400 uppercase tracking-wide">
+                Order ID
+              </p>
+              <p className="text-[11px] font-mono font-semibold dark:text-gray-300 text-gray-600 truncate max-w-[180px]">
+                {sub.UTRID}
+              </p>
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
   );
 }
 
 // ─── Skeleton Loader ──────────────────────────────────────────────────────────
 function PlanSkeleton() {
   return (
-    <div className="flex gap-4 overflow-hidden px-1 py-2">
+    <div className="flex gap-4 overflow-hidden px-2 py-2">
       {[1, 2, 3].map((i) => (
         <div
           key={i}
@@ -510,50 +162,29 @@ function PlanSkeleton() {
   );
 }
 
-// ─── Main Component ───────────────────────────────────────────────────────────
-export default function MainSubscription() {
-  const [plans, setPlans] = useState([]);
-  const [selectedPlan, setSelectedPlan] = useState(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
-  const [openPlanModal, setOpenPlanModal] = useState(false);
-  const [openCheckoutModal, setOpenCheckoutModal] = useState(false);
+function SubSkeleton() {
+  return (
+    <div className="mx-3 space-y-4">
+      <Skeleton className="h-4 w-36 rounded-full" />
+      <div className="rounded-2xl overflow-hidden border dark:border-white/10 border-black/10">
+        <Skeleton className="h-1.5 w-full rounded-none" />
+        <div className="p-5 space-y-4 dark:bg-[#0f1117] bg-white">
+          <Skeleton className="h-7 w-1/2 rounded-xl" />
+          <Skeleton className="h-16 w-full rounded-xl" />
+          <div className="grid grid-cols-3 gap-3">
+            {[1, 2, 3].map((i) => (
+              <Skeleton key={i} className="h-20 rounded-xl" />
+            ))}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
 
-  useEffect(() => {
-    const fetchPlans = async () => {
-      try {
-        setLoading(true);
-        setError(null);
-        const raw = localStorage.getItem("selectedCompany");
-        if (!raw) throw new Error("No company data found in localStorage.");
-        const company = JSON.parse(raw);
-        const companyId = company?.id;
-        if (!companyId) throw new Error("Company ID not found.");
-        const docRef = doc(db, "mlmcomp", companyId);
-        const docSnap = await getDoc(docRef);
-        if (!docSnap.exists())
-          throw new Error("Company not found in Firestore.");
-        const data = docSnap.data();
-        const fetchedPlans = (data?.Plans ?? []).filter(
-          (p) => p.PlanName || p.image_url,
-        );
-        setPlans(fetchedPlans);
-      } catch (err) {
-        console.error("Error fetching plans:", err);
-        setError(err.message || "Failed to load plans.");
-      } finally {
-        setLoading(false);
-      }
-    };
-    fetchPlans();
-  }, []);
-
-  const handleSlideClick = (plan) => {
-    setSelectedPlan(plan);
-    setOpenPlanModal(true);
-  };
-
-  const PlaceholderSlide = ({ plan, onClick }) => (
+// ─── Placeholder Slide ────────────────────────────────────────────────────────
+function PlaceholderSlide({ plan, onClick }) {
+  return (
     <div
       onClick={onClick}
       className="relative w-full h-full cursor-pointer group rounded-2xl overflow-hidden
@@ -578,7 +209,126 @@ export default function MainSubscription() {
       <div className="absolute inset-0 dark:bg-white/5 bg-black/5 opacity-0 group-hover:opacity-100 transition-opacity duration-200" />
     </div>
   );
+}
 
+// ─── Main Component ───────────────────────────────────────────────────────────
+export default function MainSubscription() {
+  const [plans, setPlans] = useState([]);
+  const [selectedPlan, setSelectedPlan] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [openPlanModal, setOpenPlanModal] = useState(false);
+  const [openCheckoutModal, setOpenCheckoutModal] = useState(false);
+
+  // Subscription states
+  const [subscription, setSubscription] = useState(null);
+  const [subLoading, setSubLoading] = useState(true);
+
+  // Fetch active subscription for logged-in user
+  const fetchSubscription = useCallback(async () => {
+    try {
+      setSubLoading(true);
+      const raw = localStorage.getItem("mlmuser");
+      if (!raw) return;
+      const user = JSON.parse(raw);
+      const mobileNo = user?.mobileNo;
+      if (!mobileNo) return;
+
+      const q = query(
+        collection(db, "subscription"),
+        where("mobileNo", "==", mobileNo),
+        where("Active", "==", true),
+        where("Expire", "==", false),
+      );
+      const snap = await getDocs(q);
+      if (!snap.empty) {
+        // Pick the most recent subscription
+        const subs = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
+        subs.sort((a, b) => {
+          const aDate = a.PurchaseAt?.seconds ?? 0;
+          const bDate = b.PurchaseAt?.seconds ?? 0;
+          return bDate - aDate;
+        });
+        setSubscription(subs[0]);
+      }
+    } catch (err) {
+      console.error("Error fetching subscription:", err);
+    } finally {
+      setSubLoading(false);
+    }
+  }, []);
+
+  // Fetch available plans
+  const fetchPlans = useCallback(async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      const raw = localStorage.getItem("selectedCompany");
+      if (!raw) throw new Error("No company data found.");
+      const company = JSON.parse(raw);
+      if (!company?.id) throw new Error("Company ID not found.");
+      const docRef = doc(db, "mlmcomp", company.id);
+      const docSnap = await getDoc(docRef);
+      if (!docSnap.exists()) throw new Error("Company not found in Firestore.");
+      const data = docSnap.data();
+      const fetchedPlans = (data?.Plans ?? []).filter(
+        (p) => p.PlanName || p.image_url,
+      );
+      setPlans(fetchedPlans);
+    } catch (err) {
+      console.error("Error fetching plans:", err);
+      setError(err.message || "Failed to load plans.");
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchSubscription();
+  }, [fetchSubscription]);
+
+  // Only fetch plans if no active subscription
+  useEffect(() => {
+    if (!subLoading && !subscription) {
+      fetchPlans();
+    } else if (!subLoading && subscription) {
+      setLoading(false);
+    }
+  }, [subLoading, subscription, fetchPlans]);
+
+  const handleSlideClick = (plan) => {
+    setSelectedPlan(plan);
+    setOpenPlanModal(true);
+  };
+
+  // Called after successful payment — re-fetch subscription
+  const handlePaymentSuccess = useCallback(() => {
+    setOpenCheckoutModal(false);
+    setOpenPlanModal(false);
+    fetchSubscription();
+  }, [fetchSubscription]);
+
+  // ── Loading state ─────────────────────────────────────────────────────────
+  if (subLoading) {
+    return (
+      <div className="w-full mt-10 dark:bg-[#0a0c10] bg-gray-50 transition-colors duration-300">
+        <div className="mt-5" />
+        <SubSkeleton />
+      </div>
+    );
+  }
+
+  // ── Active subscription view ───────────────────────────────────────────────
+  if (subscription) {
+    return (
+      <div className="w-full mt-10 dark:bg-[#0a0c10] bg-gray-50 transition-colors duration-300">
+        <div className="mt-5" />
+        <ActiveSubscriptionCard sub={subscription} />
+      </div>
+    );
+  }
+
+  // ── Plans view ────────────────────────────────────────────────────────────
   return (
     <div className="w-full mt-10 dark:bg-[#0a0c10] bg-gray-50 transition-colors duration-300">
       <div className="mt-5" />
@@ -664,10 +414,12 @@ export default function MainSubscription() {
       {/* Plan Details Modal */}
       <PlanModal
         plan={selectedPlan}
-        isOpen={false}
         openA={openPlanModal}
         setOpenA={setOpenPlanModal}
-        onProceedToCheckout={() => setOpenCheckoutModal(true)}
+        onProceedToCheckout={() => {
+          setOpenPlanModal(false);
+          setOpenCheckoutModal(true);
+        }}
       />
 
       {/* Checkout Modal */}
@@ -675,7 +427,11 @@ export default function MainSubscription() {
         plan={selectedPlan}
         isOpen={openCheckoutModal}
         setIsOpen={setOpenCheckoutModal}
-        onBack={() => setOpenPlanModal(true)}
+        onBack={() => {
+          setOpenCheckoutModal(false);
+          setOpenPlanModal(true);
+        }}
+        onPaymentSuccess={handlePaymentSuccess}
       />
     </div>
   );
