@@ -44,7 +44,7 @@ const TABS = [
   { label: "Profile",      path: "/profile",      Icon: ProfileIcon      },
 ];
 
-const HIDDEN_PATHS = ["/Editor", "/profile", "/subscription"];
+const HIDDEN_PATHS = [""];
 
 export default function TabBar({
   collapsed,

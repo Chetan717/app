@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useGeneralData } from "../../Context/GeneralContext";
 import InvoicePopup from "./utils/InvoicePopup";
-import { useNavigate } from "react-router";
+import { useNavigate,Link } from "react-router";
 import ChangePin from "./utils/ChangePin";
 import DeleteAcc from "./utils/DeleteAcc";
 /* ─────────────────────────────────────────
@@ -256,22 +256,13 @@ export default function SettingsMenu() {
 
   return (
     <>
-      <InvoicePopup show={invShow} setInvShow={setInvShow} />
+      {/* <InvoicePopup show={invShow} setInvShow={setInvShow} /> */}
       <ChangePin show={chngePin} setChngePin={setChngePin} />
       <DeleteAcc show={deleteAcc} setDeleteAcc={setDeleteAcc} />
-      <div className=" bg-gray-50 w-full flex items-start justify-center p-2">
+      <div className=" bg-gray-50 dark:bg-black w-full flex items-start justify-center p-2">
         <div className="w-full bg-white rounded-2xl shadow-sm overflow-hidden border border-gray-100">
           {/* ── PREFERENCES ── */}
           <SectionHeader title="Preferences" />
-
-          {/* <MenuRow
-          icon={GlobeIcon}
-          label="Languages"
-          rightContent={
-            <span className="text-[14px] text-gray-400">{language}</span>
-          }
-        />
-        <Divider /> */}
 
           <MenuRow
             icon={MoonIcon}
@@ -281,45 +272,35 @@ export default function SettingsMenu() {
           />
           <Divider />
 
-          <MenuRow
-            icon={InvoiceIcon}
-            label="Invoice"
-            onClick={() => setInvShow(true)}
-            rightContent={
-              <span className="text-gray-400">
-                <svg
-                  width="16"
-                  height="16"
-                  viewBox="0 0 16 16"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="1.5"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                >
-                  <path d="M8 3v7M5.5 7.5 8 10l2.5-2.5M3 12.5h10" />
-                </svg>
-              </span>
-            }
-          />
-
           {/* ── HELP & SUPPORT ── */}
           <SectionHeader title="Help & Support" />
 
-          <MenuRow onClick={()=>navigate("/mlmprofile")} icon={GearIcon} label="Banner Setting" />
+          <MenuRow onClick={() => navigate("/mlmprofile")} icon={GearIcon} label="Banner Setting" />
           <Divider />
-          <MenuRow icon={CircleQuestionIcon} label="Learn How to use apps" />
+          <MenuRow
+            onClick={() => window.open("https://youtube.com/@mlmboosterapp?si=4AQiHvcR8x6CmOHX", "_blank")}
+            icon={CircleQuestionIcon}
+            label="Learn How to use apps"
+          />
           <Divider />
-          <MenuRow icon={PersonIcon} label="Customer Care" />
+          <MenuRow
+            onClick={() => window.open("tel:9229885383")}
+            icon={PersonIcon}
+            label="Customer Care"
+          />
           <Divider />
-          <MenuRow icon={CommentIcon} label="Chat with an Expert" />
+          <MenuRow
+            onClick={() => window.open("https://wa.me/919229885383", "_blank")}
+            icon={CommentIcon}
+            label="Chat with an Expert"
+          />
 
           {/* ── SECURITY ── */}
           <SectionHeader title="Security" />
 
-          <MenuRow onClick={()=>setChngePin(true)} icon={KeyIcon} label="Change Password" />
+          <MenuRow onClick={() => setChngePin(true)} icon={KeyIcon} label="Change Password" />
           <Divider />
-          <MenuRow  onClick={()=>setDeleteAcc(true)} icon={PersonXmarkIcon} label="Delete My Account" danger />
+          <MenuRow onClick={() => setDeleteAcc(true)} icon={PersonXmarkIcon} label="Delete My Account" danger />
 
           {/* ── ABOUT ── */}
           <SectionHeader title="About" />
