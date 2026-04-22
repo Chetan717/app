@@ -157,17 +157,31 @@ function GeneralEditPage({
     document.body.removeChild(link);
   };
 
-  const handleExport = () => {
-    setIsProfileSelected(false);
-    setTimeout(() => {
-      const uri = stageRef.current.toDataURL({
-        pixelRatio: EXPORT_PIXEL_RATIO,
-        mimeType: "image/png",
-        quality: 1,
-      });
-      downloadURI(uri, "stage-hd.png");
-    }, 50);
-  };
+const handleExport = () => {
+  setIsProfileSelected(false);
+  setTimeout(() => {
+    const uri = stageRef.current.toDataURL({
+      pixelRatio: EXPORT_PIXEL_RATIO,
+      mimeType: "image/png",
+      quality: 1,
+    });
+
+    if (window.ReactNativeWebView) {
+      // ✅ Inside Expo WebView — RN injected this automatically
+      window.ReactNativeWebView.postMessage(
+        JSON.stringify({ type: "DOWNLOAD_IMAGE", base64: uri, fileName: "mlmbooster.png" })
+      );
+    } else {
+      // ✅ Normal browser
+      const link = document.createElement("a");
+      link.download = "mlmbooster.png";
+      link.href = uri;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    }
+  }, 50);
+};
   // ── Flip horizontal ──────────────────────────────────────────────
   const handleFlip = (e) => {
     e.stopPropagation(); // prevent stage deselect
