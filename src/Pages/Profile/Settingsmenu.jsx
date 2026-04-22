@@ -307,9 +307,9 @@ export default function SettingsMenu() {
 
           <MenuRow icon={StarIcon} label="Feedback & Review" />
           <Divider />
-          <MenuRow icon={ShieldIcon} label="Privacy Policy" />
+          <MenuRow icon={ShieldIcon}  onClick={() => window.open("https://mlmbooster.net/Privacy.html", "_blank")} label="Privacy Policy" />
           <Divider />
-          <MenuRow icon={FileTextIcon} label="Term & Condition" />
+          <MenuRow icon={FileTextIcon} onClick={() => window.open("https://mlmbooster.net/Term.html", "_blank")} label="Term & Condition" />
 
           <div className="h-4" />
         </div>
