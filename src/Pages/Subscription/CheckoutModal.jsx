@@ -10,13 +10,8 @@ import {
   serverTimestamp,
 } from "firebase/firestore";
 
-// ─── IMPORTANT: Add to your .env → REACT_APP_RAZORPAY_KEY_ID=rzp_live_xxx ───
-const RAZORPAY_KEY_ID = "rzp_live_8Jx7RC30uLKlPJ";
+const RAZORPAY_KEY_ID = "rzp_test_AwYjl9iEgMP9Zk";
 
-const CREATE_ORDER_URL =
-  "https://cvmhznb2u7.execute-api.ap-south-1.amazonaws.com/createOrder/?API_KEY=ADS360KEY";
-
-// ─── Load Razorpay SDK dynamically ───────────────────────────────────────────
 const loadRazorpayScript = () =>
   new Promise((resolve) => {
     if (window.Razorpay) return resolve(true);
@@ -28,10 +23,9 @@ const loadRazorpayScript = () =>
     document.body.appendChild(script);
   });
 
-// ─── Storage helpers ──────────────────────────────────────────────────────────
 const getUserFromStorage = () => {
   try {
-    return JSON.parse(localStorage.getItem("mlmuser") || "{}");
+    return JSON.parse(localStorage.getItem("usermlm") || "{}");
   } catch {
     return {};
   }
@@ -59,7 +53,6 @@ const fmtDisplay = (date) =>
     year: "numeric",
   });
 
-// ─── CheckoutModal ────────────────────────────────────────────────────────────
 export function CheckoutModal({
   plan,
   isOpen,
@@ -67,11 +60,8 @@ export function CheckoutModal({
   onBack,
   onPaymentSuccess,
 }) {
-  // ════════════════════════════════════════════════════════════════════════════
-  // ALL HOOKS MUST BE HERE — before any conditional return
-  // ════════════════════════════════════════════════════════════════════════════
   const [coupon, setCoupon] = useState(["", "", "", "", "", ""]);
-  const [couponStatus, setCouponStatus] = useState(null); // null | "valid" | "invalid" | "inactive"
+  const [couponStatus, setCouponStatus] = useState(null);
   const [couponLoading, setCouponLoading] = useState(false);
   const [discountPercent, setDiscountPercent] = useState(0);
   const [couponData, setCouponData] = useState(null);
@@ -84,7 +74,6 @@ export function CheckoutModal({
     setPaymentError(null);
     setPaymentLoading(true);
 
-    // Snapshot values at call time (avoid stale closure issues)
     const baseAmt = plan.PlanAmount ?? 0;
     const discount = Math.floor((baseAmt * discountPercent) / 100);
     const payableAmount = baseAmt - discount;
@@ -93,34 +82,41 @@ export function CheckoutModal({
     const expiryDate = new Date(today);
     expiryDate.setDate(expiryDate.getDate() + (plan.Day_value ?? 0));
 
-    let orderId = null;
-
     try {
-      // 1. Load Razorpay SDK
+      // ── Step 1: Load Razorpay SDK ──────────────────────────────────────
       const sdkLoaded = await loadRazorpayScript();
-      if (!sdkLoaded)
-        throw new Error(
-          "Payment gateway failed to load. Check your connection.",
-        );
+      if (!sdkLoaded) {
+        setPaymentError("Payment gateway failed to load. Check your connection.");
+        setPaymentLoading(false);
+        return;
+      }
 
-      // 2. Create order on backend (amount in paise)
-      const res = await fetch(CREATE_ORDER_URL, {
-        method: "PUT",
+      // ── Step 2: Create order on backend ───────────────────────────────
+      const res = await fetch("https://pserver.vercel.app?API_KEY=ADS360KEY", {
+        method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ amount: payableAmount * 100 }),
+        body: JSON.stringify({ amount: payableAmount }),
       });
-      console.log(res, "response");
-      
-      if (!res.ok) throw new Error(`Order creation failed: ${res.status}`);
+
+      if (!res.ok) {
+        setPaymentError(`Order creation failed. Please try again.`);
+        setPaymentLoading(false);
+        return;
+      }
+
       const orderData = await res.json();
-      orderId =
+      const orderId =
         orderData?.data?.order_id ?? orderData?.order_id ?? orderData?.id;
-      if (!orderId) throw new Error("Invalid order response from server.");
+
+      if (!orderId) {
+        setPaymentError("Invalid order response. Please try again.");
+        setPaymentLoading(false);
+        return;
+      }
 
       const user = getUserFromStorage();
       const company = getCompanyFromStorage();
 
-      // Helper to build log document
       const buildLogDoc = (status) => ({
         OrderId: orderId,
         payment: status,
@@ -140,108 +136,98 @@ export function CheckoutModal({
         UTRID: orderId,
       });
 
-      // 3. Open Razorpay Checkout
-      await new Promise((resolve, reject) => {
-        const options = {
-          key: RAZORPAY_KEY_ID,
-          amount: payableAmount * 100,
-          currency: "INR",
-          name: company?.name || "Subscription",
-          description: plan.PlanName || "Plan Purchase",
-          order_id: orderId,
-          prefill: {
-            name: user?.name || "",
-            contact: user?.mobileNo || "",
-            email: user?.email || "",
-          },
-          notes: {
-            plan: plan.PlanName || "",
-            planType: plan.Type || "",
-            company: company?.name || "",
-          },
-          theme: { color: "#6366f1" },
-          modal: {
-            ondismiss: () => reject(new Error("DISMISSED")),
-          },
-          handler: async (response) => {
-            try {
-              // 4a. Save subscription on success
-              await addDoc(collection(db, "subscription"), {
-                ...buildLogDoc("Success"),
-                couponApplied:
-                  couponStatus === "valid" ? coupon.join("") : null,
-                discountPercent,
-              });
-              // 4b. Log success
-              await addDoc(
-                collection(db, "paymentlog"),
-                buildLogDoc("Success"),
-              ).catch(() => {});
-              resolve(response);
-            } catch (saveErr) {
-              console.error("Firestore save error:", saveErr);
-              resolve(response); // payment succeeded — still resolve
-            }
-          },
-        };
+      // ── Step 3: Close HeroUI modal first, wait for backdrop to unmount ─
+      setIsOpen(false);
+      await new Promise((r) => setTimeout(r, 350));
 
-        const rzp = new window.Razorpay(options);
+      // ── Step 4: Open Razorpay ──────────────────────────────────────────
+      const options = {
+        key: RAZORPAY_KEY_ID,
+        amount: Number(payableAmount),
+        currency: "INR",
+        name: company?.name || "Subscription",
+        description: plan.PlanName || "Plan Purchase",
+        order_id: orderId,
+        prefill: {
+          name: user?.name || "",
+          contact: user?.mobileNo || "",
+          email: user?.email || "",
+        },
+        notes: {
+          plan: plan.PlanName || "",
+          planType: plan.Type || "",
+          company: company?.name || "",
+        },
+        theme: { color: "#0e245c" },
 
-        rzp.on("payment.failed", async (failRes) => {
-          const failedId = failRes?.error?.metadata?.order_id || orderId;
-          const failDoc = {
-            ...buildLogDoc("Failed"),
-            OrderId: failedId,
-            UTRID: failedId,
-          };
-          await addDoc(collection(db, "paymentlog"), failDoc).catch(() => {});
-          reject(
-            new Error(
-              failRes?.error?.description || "Payment failed. Please retry.",
-            ),
-          );
-        });
+        // ✅ SUCCESS — fires when payment is captured
+        handler: async (response) => {
+          try {
+            await addDoc(collection(db, "subscription"), {
+              ...buildLogDoc("Success"),
+              razorpay_payment_id: response.razorpay_payment_id,
+              razorpay_order_id: response.razorpay_order_id,
+              // razorpay_invoice_id:response.razorpay_invoice_id,
+              razorpay_signature: response.razorpay_signature,
+              couponApplied: couponStatus === "valid" ? coupon.join("") : null,
+              discountPercent,
+            });
+            await addDoc(
+              collection(db, "paymentlog"),
+              buildLogDoc("Success")
+            ).catch(() => {});
+          } catch (e) {
+            console.error("Firestore save error:", e);
+          } finally {
+            setPaymentLoading(false);
+            if (onPaymentSuccess) onPaymentSuccess();
+          }
+        },
 
-        rzp.open();
+        modal: {
+          // ✅ DISMISS — fires for every close action:
+          //    X button, back button, swipe, tap outside.
+          //    Also fires AFTER payment.failed when user closes the screen.
+          ondismiss: async () => {
+            await addDoc(collection(db, "paymentlog"), {
+              ...buildLogDoc("Dismissed"),
+            }).catch(() => {});
+            setPaymentLoading(false);
+            setIsOpen(true);
+            setPaymentError("Payment cancelled. You can try again anytime.");
+          },
+        },
+      };
+
+      const rzp = new window.Razorpay(options);
+
+      // ✅ FAILED — fires when payment attempt fails (card declined, etc.)
+      //    Razorpay keeps the screen OPEN after this so user can retry.
+      //    ondismiss fires later when user manually closes the screen.
+      rzp.on("payment.failed", async (failRes) => {
+        const failedId =
+          failRes?.error?.metadata?.order_id ||
+          failRes?.error?.metadata?.payment_id ||
+          orderId;
+
+        await addDoc(collection(db, "paymentlog"), {
+          ...buildLogDoc("Failed"),
+          OrderId: failedId,
+          UTRID: failedId,
+          errorCode: failRes?.error?.code || "",
+          errorDescription: failRes?.error?.description || "",
+          errorReason: failRes?.error?.reason || "",
+        }).catch(() => {});
+
+        // ✅ Don't close Razorpay here — let user retry inside Razorpay screen.
+        //    ondismiss will fire when they finally close it.
       });
 
-      // 5. Success — notify parent to refresh subscription view
-      if (onPaymentSuccess) onPaymentSuccess();
+      rzp.open();
     } catch (err) {
-      if (err.message === "DISMISSED") {
-        // Log dismissed payment if we have an orderId
-        if (orderId) {
-          const u = getUserFromStorage();
-          const c = getCompanyFromStorage();
-          const t = new Date();
-          const e = new Date(t);
-          e.setDate(e.getDate() + (plan.Day_value ?? 0));
-          await addDoc(collection(db, "paymentlog"), {
-            OrderId: orderId,
-            payment: "Failed",
-            plan: plan.PlanName || "",
-            planType: plan.Type || "",
-            company: c?.name || c?.id || "",
-            startdate: formatDateForDB(t),
-            expirydate: formatDateForDB(e),
-            download: plan.downloads ?? 0,
-            PurchaseAt: serverTimestamp(),
-            PaymentAmount: payableAmount,
-            duration: plan.Day_value ?? 0,
-            mobileNo: u?.mobileNo || "",
-            UserName: u?.name || "",
-            Active: false,
-            Expire: true,
-            UTRID: orderId,
-          }).catch(() => {});
-        }
-        setPaymentError("Payment cancelled. You can try again anytime.");
-      } else {
-        setPaymentError(
-          err.message || "Something went wrong. Please try again.",
-        );
-      }
-    } finally {
+      console.error("Payment error:", err);
+      setPaymentError("Something went wrong. Please try again.");
+      setIsOpen(true);
       setPaymentLoading(false);
     }
   }, [
@@ -253,12 +239,8 @@ export function CheckoutModal({
     onPaymentSuccess,
   ]);
 
-  // ════════════════════════════════════════════════════════════════════════════
-  // GUARD — safe here because all hooks are already called above
-  // ════════════════════════════════════════════════════════════════════════════
   if (!plan) return null;
 
-  // ── Derived values (plain JS — not hooks) ─────────────────────────────────
   const baseAmount = plan.PlanAmount ?? 0;
   const discountAmount = Math.floor((baseAmount * discountPercent) / 100);
   const finalAmount = baseAmount - discountAmount;
@@ -270,7 +252,6 @@ export function CheckoutModal({
   const couponString = coupon.join("");
   const isCouponFilled = couponString.length === 6;
 
-  // ── Coupon input handlers (plain functions — not hooks) ───────────────────
   const handleCouponChange = (val, idx) => {
     const char = val
       .replace(/[^a-zA-Z0-9]/g, "")
@@ -314,7 +295,7 @@ export function CheckoutModal({
     try {
       const q = query(
         collection(db, "couponcode"),
-        where("code", "==", couponString),
+        where("code", "==", couponString)
       );
       const snap = await getDocs(q);
       if (snap.empty) {
@@ -351,7 +332,6 @@ export function CheckoutModal({
     inputRefs.current[0]?.focus();
   };
 
-  // ── Render ────────────────────────────────────────────────────────────────
   return (
     <Modal isOpen={isOpen}>
       <Modal.Backdrop>
