@@ -24,32 +24,114 @@ import { useNavigate } from "react-router";
 
 const storage = getStorage(app);
 
-// ════════════════════════════════════════════════════════════
-// REMOVE.BG
-// ════════════════════════════════════════════════════════════
-export const REMOVE_BG_API_KEYS = [
-  "e69bj6px7qJKw5x4N1XepLM9",
-  "YOUR_KEY_2",
-  "YOUR_KEY_3",
-];
+
+let _keys = [];             // [{ id, key }] — all keys from Firestore
+let _keyIndex = 0;          // round-robin pointer
+let _exhausted = new Set(); // ids of keys that returned 402 this session
+let _lastFetch = 0;
+const CACHE_TTL = 5 * 60 * 1000; // re-fetch keys every 5 min
+ 
+// ── Load all keys from Firestore (no active filter) ──────────
+async function loadKeys(forceRefresh = false) {
+  const now = Date.now();
+  if (!forceRefresh && _keys.length > 0 && now - _lastFetch < CACHE_TTL) {
+    return;
+  }
+ 
+  try {
+    const snap = await getDocs(collection(db, "removebg"));
+    _keys = snap.docs.map((d) => ({ id: d.id, key: d.data().key }));
+    _lastFetch = now;
+    // Reset exhausted set on re-fetch (picks up newly added keys too)
+    _exhausted = new Set();
+    if (_keyIndex >= _keys.length) _keyIndex = 0;
+    console.log(`[removeBg] Loaded ${_keys.length} key(s) from Firestore.`);
+  } catch (err) {
+    console.error("[removeBg] Failed to load keys:", err);
+  }
+}
+ 
+// ── Get next available (non-exhausted) key ───────────────────
+function getNextKey() {
+  const total = _keys.length;
+  for (let i = 0; i < total; i++) {
+    const entry = _keys[(_keyIndex + i) % total];
+    if (!_exhausted.has(entry.id)) {
+      // Advance pointer past this key for the next call
+      _keyIndex = (_keyIndex + i + 1) % total;
+      return entry;
+    }
+  }
+  return null; 
+}
+
 
 export async function removeBackground(file) {
-  for (const key of REMOVE_BG_API_KEYS) {
+  await loadKeys();
+ 
+  if (_keys.length === 0) {
+    // console.error("[removeBg] No keys found in Firestore 'removebg' collection.");
+    return null;
+  }
+ 
+  // Try every key at most once per call
+  const total = _keys.length;
+ 
+  for (let attempt = 0; attempt < total; attempt++) {
+    const keyEntry = getNextKey();
+ 
+    if (!keyEntry) {
+      // console.error("[removeBg] All keys are quota-exhausted for this session.");
+      return null;
+    }
+ 
     const fd = new FormData();
     fd.append("image_file", file);
     fd.append("size", "auto");
-    const res = await fetch("https://api.remove.bg/v1.0/removebg", {
-      method: "POST",
-      headers: { "X-Api-Key": key },
-      body: fd,
-    });
-    if (res.ok) return await res.blob();
-    if (res.status !== 402 && res.status !== 429) {
-      console.warn("remove.bg error", res.status);
-      return null;
+ 
+    try {
+      const res = await fetch("https://api.remove.bg/v1.0/removebg", {
+        method: "POST",
+        headers: { "X-Api-Key": keyEntry.key },
+        body: fd,
+      });
+ 
+      if (res.ok) {
+        // console.log(`[removeBg] ✅ Success with key id=${keyEntry.id}`);
+        return await res.blob();
+      }
+ 
+      if (res.status === 402) {
+        // Quota exhausted — blacklist this key for the rest of the session
+        // console.warn(`[removeBg] 🔄 Key id=${keyEntry.id} quota exhausted (402). Rotating…`);
+        _exhausted.add(keyEntry.id);
+        continue;
+      }
+ 
+      if (res.status === 429) {
+        // Temporarily rate-limited — skip for this call but don't blacklist
+        // console.warn(`[removeBg] 🔄 Key id=${keyEntry.id} rate-limited (429). Rotating…`);
+        continue;
+      }
+ 
+      // Any other HTTP error — log and try next key
+      const body = await res.text().catch(() => "");
+      // console.warn(`[removeBg] Key id=${keyEntry.id} returned ${res.status}:`, body);
+      continue;
+ 
+    } catch (networkErr) {
+      // console.error(`[removeBg] Network error with key id=${keyEntry.id}:`, networkErr);
+      continue;
     }
   }
+ 
+  // console.error("[removeBg] ❌ All keys failed for this request.");
   return null;
+}
+
+export function refreshKeys() {
+  _lastFetch = 0;
+  _exhausted = new Set();
 }
 
 // ════════════════════════════════════════════════════════════
