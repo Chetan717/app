@@ -1,16 +1,6 @@
 import { useState, useRef, useCallback, useEffect } from "react";
 
-const CANVAS_SIZE = 300; // Logical size (CSS pixels)
-
-// ── Aspect ratio lock ─────────────────────────────────────────────
-// Change this to any ratio you need:
-//   1        → square  (1:1)
-//   4 / 3    → classic (4:3)
-//   16 / 9   → wide    (16:9)
-//   3 / 4    → portrait (3:4)
 const ASPECT_RATIO = 2 / 3;
-
-// Initial crop dimensions that respect the ratio, centered in the canvas
 const INITIAL_W = 0.8;
 const INITIAL_H = INITIAL_W / ASPECT_RATIO;
 const INITIAL_CROP = {
@@ -35,7 +25,9 @@ function getContainDimensions(imgW, imgH, canvasSize) {
 
 export function ImageEditorCanvas({ src, onDone, onCancel, setOpen }) {
   const displayRef = useRef(null);
+  const containerRef = useRef(null);
   const imgRef = useRef(null);
+  const [canvasSize, setCanvasSize] = useState(300);
 
   const [rotation, setRotation] = useState(0);
   const [flipH, setFlipH] = useState(false);
@@ -44,53 +36,66 @@ export function ImageEditorCanvas({ src, onDone, onCancel, setOpen }) {
   const [crop, setCrop] = useState(INITIAL_CROP);
   const dragState = useRef(null);
 
+  // ── Measure container and set canvas size ─────────────────────
+  useEffect(() => {
+    const measure = () => {
+      if (!containerRef.current) return;
+      const { width, height } = containerRef.current.getBoundingClientRect();
+      // Leave room for the toolbar (~56px) and action buttons (~56px)
+      const available = Math.min(width - 16, height - 120);
+      setCanvasSize(Math.max(200, available));
+    };
+    measure();
+    const ro = new ResizeObserver(measure);
+    if (containerRef.current) ro.observe(containerRef.current);
+    return () => ro.disconnect();
+  }, []);
+
   const drawDisplay = useCallback(() => {
     const canvas = displayRef.current;
     const img = imgRef.current;
     if (!canvas || !img) return;
 
     const dpr = window.devicePixelRatio || 1;
-    canvas.width = CANVAS_SIZE * dpr;
-    canvas.height = CANVAS_SIZE * dpr;
-    canvas.style.width = `${CANVAS_SIZE}px`;
-    canvas.style.height = `${CANVAS_SIZE}px`;
+    canvas.width = canvasSize * dpr;
+    canvas.height = canvasSize * dpr;
+    canvas.style.width = `${canvasSize}px`;
+    canvas.style.height = `${canvasSize}px`;
 
     const ctx = canvas.getContext("2d");
     ctx.scale(dpr, dpr);
     ctx.imageSmoothingEnabled = true;
     ctx.imageSmoothingQuality = "high";
-    ctx.clearRect(0, 0, CANVAS_SIZE, CANVAS_SIZE);
+    ctx.clearRect(0, 0, canvasSize, canvasSize);
 
     const isRotated90 = rotation % 180 !== 0;
     const srcW = isRotated90 ? img.naturalHeight : img.naturalWidth;
     const srcH = isRotated90 ? img.naturalWidth : img.naturalHeight;
-    const { drawW, drawH } = getContainDimensions(srcW, srcH, CANVAS_SIZE);
+    const { drawW, drawH } = getContainDimensions(srcW, srcH, canvasSize);
 
     ctx.save();
-    ctx.translate(CANVAS_SIZE / 2, CANVAS_SIZE / 2);
+    ctx.translate(canvasSize / 2, canvasSize / 2);
     ctx.rotate((rotation * Math.PI) / 180);
     ctx.scale(flipH ? -1 : 1, flipV ? -1 : 1);
     ctx.filter = filter;
     ctx.drawImage(img, -drawW / 2, -drawH / 2, drawW, drawH);
     ctx.restore();
 
-    // ── Crop overlay ─────────────────────────────────────────────
     const { x, y, w, h } = crop;
-    const px = x * CANVAS_SIZE, py = y * CANVAS_SIZE;
-    const pw = w * CANVAS_SIZE, ph = h * CANVAS_SIZE;
+    const px = x * canvasSize, py = y * canvasSize;
+    const pw = w * canvasSize, ph = h * canvasSize;
 
     ctx.save();
     ctx.fillStyle = "rgba(0,0,0,0.5)";
-    ctx.fillRect(0, 0, CANVAS_SIZE, py);
-    ctx.fillRect(0, py + ph, CANVAS_SIZE, CANVAS_SIZE - py - ph);
+    ctx.fillRect(0, 0, canvasSize, py);
+    ctx.fillRect(0, py + ph, canvasSize, canvasSize - py - ph);
     ctx.fillRect(0, py, px, ph);
-    ctx.fillRect(px + pw, py, CANVAS_SIZE - px - pw, ph);
+    ctx.fillRect(px + pw, py, canvasSize - px - pw, ph);
 
     ctx.strokeStyle = "#6366f1";
     ctx.lineWidth = 2;
     ctx.strokeRect(px, py, pw, ph);
 
-    // Rule-of-thirds grid
     ctx.strokeStyle = "rgba(255,255,255,0.4)";
     ctx.lineWidth = 0.8;
     for (let i = 1; i < 3; i++) {
@@ -100,13 +105,12 @@ export function ImageEditorCanvas({ src, onDone, onCancel, setOpen }) {
       ctx.lineTo(px + pw, py + (ph / 3) * i); ctx.stroke();
     }
 
-    // Corner handles
     const hs = 10;
     ctx.fillStyle = "#6366f1";
     [[px, py], [px + pw - hs, py], [px, py + ph - hs], [px + pw - hs, py + ph - hs]]
       .forEach(([hx, hy]) => ctx.fillRect(hx, hy, hs, hs));
     ctx.restore();
-  }, [rotation, flipH, flipV, filter, crop]);
+  }, [rotation, flipH, flipV, filter, crop, canvasSize]);
 
   useEffect(() => {
     if (!src) return;
@@ -122,7 +126,7 @@ export function ImageEditorCanvas({ src, onDone, onCancel, setOpen }) {
 
   const hitTest = (nx, ny) => {
     const { x, y, w, h } = crop;
-    const hs = 14 / CANVAS_SIZE;
+    const hs = 14 / canvasSize;
     for (const c of [
       { type: "tl", cx: x,     cy: y },
       { type: "tr", cx: x + w, cy: y },
@@ -161,42 +165,26 @@ export function ImageEditorCanvas({ src, onDone, onCancel, setOpen }) {
 
     setCrop(() => {
       let { x, y, w, h } = o;
-
       if (ds.type === "move") {
-        // Move only — keep w/h unchanged
         x = Math.max(0, Math.min(1 - w, o.x + dx));
         y = Math.max(0, Math.min(1 - h, o.y + dy));
       } else {
-        // ── Resize with locked aspect ratio ───────────────────────
-        // Drive width from the horizontal drag, then derive height.
-        // For top handles, also shift y so the bottom edge stays fixed.
-        // For left handles, also shift x so the right edge stays fixed.
-
         if (ds.type === "br") {
-          w = Math.max(MIN, o.w + dx);
-          h = w / ASPECT_RATIO;
+          w = Math.max(MIN, o.w + dx); h = w / ASPECT_RATIO;
         } else if (ds.type === "bl") {
-          w = Math.max(MIN, o.w - dx);
-          h = w / ASPECT_RATIO;
-          x = o.x + o.w - w; // keep right edge fixed
+          w = Math.max(MIN, o.w - dx); h = w / ASPECT_RATIO;
+          x = o.x + o.w - w;
         } else if (ds.type === "tr") {
-          w = Math.max(MIN, o.w + dx);
-          h = w / ASPECT_RATIO;
-          y = o.y + o.h - h; // keep bottom edge fixed
+          w = Math.max(MIN, o.w + dx); h = w / ASPECT_RATIO;
+          y = o.y + o.h - h;
         } else if (ds.type === "tl") {
-          w = Math.max(MIN, o.w - dx);
-          h = w / ASPECT_RATIO;
-          x = o.x + o.w - w; // keep right edge fixed
-          y = o.y + o.h - h; // keep bottom edge fixed
+          w = Math.max(MIN, o.w - dx); h = w / ASPECT_RATIO;
+          x = o.x + o.w - w; y = o.y + o.h - h;
         }
-
-        // Clamp so crop never leaves the canvas
-        x = Math.max(0, x);
-        y = Math.max(0, y);
+        x = Math.max(0, x); y = Math.max(0, y);
         if (x + w > 1) { w = 1 - x; h = w / ASPECT_RATIO; }
         if (y + h > 1) { h = 1 - y; w = h * ASPECT_RATIO; }
       }
-
       return { x, y, w, h };
     });
   };
@@ -213,7 +201,6 @@ export function ImageEditorCanvas({ src, onDone, onCancel, setOpen }) {
   const handleDone = () => {
     const img = imgRef.current;
     if (!img) return;
-
     const OUTPUT_SIZE = Math.max(img.naturalWidth, img.naturalHeight, 1024);
     const isRotated90 = rotation % 180 !== 0;
     const srcW = isRotated90 ? img.naturalHeight : img.naturalWidth;
@@ -240,11 +227,7 @@ export function ImageEditorCanvas({ src, onDone, onCancel, setOpen }) {
     const cCtx = cropped.getContext("2d");
     cCtx.imageSmoothingEnabled = true;
     cCtx.imageSmoothingQuality = "high";
-    cCtx.drawImage(
-      out,
-      x * OUTPUT_SIZE, y * OUTPUT_SIZE, w * OUTPUT_SIZE, h * OUTPUT_SIZE,
-      0, 0, cropped.width, cropped.height
-    );
+    cCtx.drawImage(out, x * OUTPUT_SIZE, y * OUTPUT_SIZE, w * OUTPUT_SIZE, h * OUTPUT_SIZE, 0, 0, cropped.width, cropped.height);
     cropped.toBlob((blob) => onDone(blob), "image/png");
     setOpen(false);
   };
@@ -252,30 +235,34 @@ export function ImageEditorCanvas({ src, onDone, onCancel, setOpen }) {
   const onCancelClick = () => { setOpen(false); onCancel(); };
 
   return (
-    <div className="flex dark:bg-black w-full flex-col items-center gap-4 p-3">
-      <div className="relative dark:bg-white rounded-lg select-none p-2">
-        <div className="flex flex-wrap mb-2 justify-center gap-4">
-          <button onClick={() => setRotation((r) => r - 90)} className="p-3 dark:text-black py-1.5 rounded-lg bg-slate-200 hover:bg-slate-200 text-sm font-medium transition">↺</button>
-          <button onClick={() => setFlipH((v) => !v)} className={`p-3 dark:text-black py-1.5 rounded-lg text-sm font-medium transition ${flipH ? "bg-indigo-500 text-white" : "bg-slate-200 hover:bg-slate-200"}`}>⇄</button>
-          <button onClick={() => setFlipV((v) => !v)} className={`p-3 dark:text-black py-1.5 rounded-lg text-sm font-medium transition ${flipV ? "bg-indigo-500 text-white" : "bg-slate-200 hover:bg-slate-200"}`}>⇅</button>
-          <button onClick={() => setCrop(INITIAL_CROP)} className="px-3 dark:text-black py-1.5 rounded-lg bg-slate-200 hover:bg-slate-200 text-sm font-medium transition">Reset</button>
-        </div>
-        <canvas
-          ref={displayRef}
-          style={{ touchAction: "none", borderRadius: 12, display: "block" }}
-          onMouseDown={onPointerDown}
-          onMouseMove={(e) => { onPointerMove(e); onMouseMoveForCursor(e); }}
-          onMouseUp={onPointerUp}
-          onMouseLeave={onPointerUp}
-          onTouchStart={onPointerDown}
-          onTouchMove={onPointerMove}
-          onTouchEnd={onPointerUp}
-        />
+    // ── Outer wrapper fills whatever space the Modal.Body gives it ──
+    <div ref={containerRef} className="flex flex-col items-center justify-between w-full h-full gap-3 p-2">
+      
+      {/* Toolbar */}
+      <div className="flex flex-wrap justify-center gap-3 w-full">
+        <button onClick={() => setRotation((r) => r - 90)} className="p-2 dark:text-black py-1.5 rounded-lg bg-slate-200 hover:bg-slate-300 text-sm font-medium transition">↺</button>
+        <button onClick={() => setFlipH((v) => !v)} className={`p-2 dark:text-black py-1.5 rounded-lg text-sm font-medium transition ${flipH ? "bg-indigo-500 text-white" : "bg-slate-200 hover:bg-slate-300"}`}>⇄</button>
+        <button onClick={() => setFlipV((v) => !v)} className={`p-2 dark:text-black py-1.5 rounded-lg text-sm font-medium transition ${flipV ? "bg-indigo-500 text-white" : "bg-slate-200 hover:bg-slate-300"}`}>⇅</button>
+        <button onClick={() => setCrop(INITIAL_CROP)} className="px-3 dark:text-black py-1.5 rounded-lg bg-slate-200 hover:bg-slate-300 text-sm font-medium transition">Reset</button>
       </div>
 
+      {/* Canvas — sized dynamically */}
+      <canvas
+        ref={displayRef}
+        style={{ touchAction: "none", borderRadius: 12, display: "block", flexShrink: 0 }}
+        onMouseDown={onPointerDown}
+        onMouseMove={(e) => { onPointerMove(e); onMouseMoveForCursor(e); }}
+        onMouseUp={onPointerUp}
+        onMouseLeave={onPointerUp}
+        onTouchStart={onPointerDown}
+        onTouchMove={onPointerMove}
+        onTouchEnd={onPointerUp}
+      />
+
+      {/* Action buttons */}
       <div className="flex gap-3">
         <button onClick={onCancelClick} className="px-5 py-2 dark:text-white rounded-lg border border-slate-300 text-sm hover:bg-slate-50 transition">Cancel</button>
-        <button onClick={handleDone} className="px-5 py-2 rounded-lg bg-accent text-white text-sm font-medium hover:bg-indigo-700 transition">Save & Exit</button>
+        <button onClick={handleDone} className="px-5 py-2 rounded-lg bg-indigo-600 text-white text-sm font-medium hover:bg-indigo-700 transition">Save & Exit</button>
       </div>
     </div>
   );

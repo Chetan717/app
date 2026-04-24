@@ -266,7 +266,7 @@ export function ImageEditorCanvas({ src, onDone, onCancel }) {
 
       <div className="flex gap-3">
         <button onClick={onCancel} className="px-5 py-2 dark:text-white rounded-lg border border-slate-300 text-sm hover:bg-slate-50 transition">Cancel</button>
-        <button onClick={handleDone} className="px-5 py-2 rounded-lg bg-accent text-white text-sm font-medium hover:bg-indigo-700 transition">Use Cropped Image</button>
+        <button onClick={handleDone} className="px-5 py-2 rounded-lg bg-accent text-white text-sm font-medium hover:bg-indigo-700 transition">Save</button>
       </div>
     </div>
   );

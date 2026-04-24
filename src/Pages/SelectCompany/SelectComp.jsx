@@ -143,7 +143,7 @@ export default function SelectComp() {
               `}
             >
               <img
-                className="w-[90px] h-[90px] rounded-xl object-cover"
+                className="w-[90px] h-[90px] rounded-xl object-contain"
                 src={getLogo(item)}
                 alt="company"
               />

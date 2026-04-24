@@ -573,10 +573,10 @@ export default function SalesExecutiveForm() {
       <Modal isOpen={open}>
         <Modal.Backdrop>
           <Modal.Container placement="center">
-            <Modal.Dialog className="sm:max-w-[360px]">
-              <Modal.CloseTrigger />
+            <Modal.Dialog className="">
+         
               <Modal.Header>
-                <Modal.Icon className="bg-default text-foreground" />
+               
               </Modal.Header>
               <Modal.Body>
                 <ImageEditorCanvas

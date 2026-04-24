@@ -189,7 +189,7 @@ export default function Sidebar({ collapsed, setCollapsed, mobileOpen, setMobile
           })}
 
           {/* User strip */}
-          <div className="flex items-center gap-3 px-3 py-2 mt-1">
+          {/* <div className="flex items-center gap-3 px-3 py-2 mt-1">
             <div className="min-w-[36px] w-9 h-9 rounded-xl bg-[#0e245c] flex items-center justify-center text-white font-bold text-sm flex-shrink-0">
               A
             </div>
@@ -197,7 +197,7 @@ export default function Sidebar({ collapsed, setCollapsed, mobileOpen, setMobile
               <p className="text-sm font-semibold text-gray-800 dark:text-gray-200 leading-tight whitespace-nowrap">User</p>
               <p className="text-[11px] text-gray-400 dark:text-gray-500 whitespace-nowrap">user@mlm.com</p>
             </div>
-          </div>
+          </div> */}
         </div>
       </aside>
     </>
