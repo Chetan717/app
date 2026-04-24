@@ -450,6 +450,8 @@ export default function MainSubscription() {
       const fetchedPlans = (data?.Plans ?? []).filter(
         (p) => p.PlanName || p.image_url,
       );
+     
+      
       setPlans(fetchedPlans);
     } catch (err) {
       console.error("Error fetching plans:", err);
@@ -463,6 +465,7 @@ export default function MainSubscription() {
     fetchSubscriptions();
   }, [fetchSubscriptions]);
 
+
   useEffect(() => {
     if (!subLoading) {
       fetchPlans();
@@ -474,6 +477,8 @@ export default function MainSubscription() {
     setOpenPlanModal(true);
   };
 
+  console.log(activeSubscriptions);
+  
   const handlePaymentSuccess = useCallback(() => {
     setOpenCheckoutModal(false);
     setOpenPlanModal(false);

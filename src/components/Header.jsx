@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Moon, Sun, ListUl, Gear } from "@gravity-ui/icons";
+import { Moon, Sun, ListUl, Gear,ArrowRotateRight, Rocket } from "@gravity-ui/icons";
 import { useGeneralData } from "../Context/GeneralContext";
 import { useNavigate, useLocation } from "react-router";
 // ── Read localStorage once at module level (outside component) ──
@@ -94,6 +94,15 @@ export default function Header({
             <Moon className="size-5 text-foreground" />
           )}
         </button>
+        <button
+            onClick={() => window.location.reload()}
+            className="flex items-center gap-2 pl-2 pr-2.5 py-1 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors group cursor-pointer"
+          >
+            <ArrowRotateRight  className="size-5 text-black dark:text-white" />
+            {/* <div className="w-7 h-7 rounded-lg bg-[#0e245c] flex items-center justify-center text-white font-bold text-xs flex-shrink-0">
+              {userName?.[0]?.toUpperCase() || "A"}
+            </div> */}
+          </button>
         {location.pathname === "/Editor" ? (
           <button
             onClick={() => navigate("/mlmprofile")}

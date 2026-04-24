@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useCallback } from "react";
 import { db, app } from "../../../Firebase";
 import {
   collection, addDoc, updateDoc, deleteDoc, doc,
@@ -234,57 +234,57 @@ export default function MLMProfilePage() {
   const topuplines = Array.isArray(company?.topuplines) ? company.topuplines : [];
   const designations = Array.isArray(company?.designation) ? company.designation : [];
 
-  // ── Fetch existing profile on mount ────────────────────────
-  useEffect(() => {
+  // ── fetchProfile (extracted so it can be called after save too) ──
+  const fetchProfile = useCallback(async () => {
     if (!userMobile) { setLoadingProfile(false); return; }
+    setLoadingProfile(true);
+    try {
+      const q = query(collection(db, "mlmprofiles"), where("mobile", "==", userMobile));
+      const snap = await getDocs(q);
 
-    const fetchProfile = async () => {
-      setLoadingProfile(true);
-      try {
-        const q = query(collection(db, "mlmprofiles"), where("mobile", "==", userMobile));
-        const snap = await getDocs(q);
+      if (!snap.empty) {
+        const docSnap = snap.docs[0];
+        const data = docSnap.data();
+        setExistingDocId(docSnap.id);
 
-        if (!snap.empty) {
-          const docSnap = snap.docs[0];
-          const data = docSnap.data();
-          setExistingDocId(docSnap.id);
+        const fullName = data.fullName || "";
+        const dotIdx = fullName.indexOf(".");
+        const salutation = dotIdx !== -1 ? fullName.slice(0, dotIdx) : "Mr";
+        const name = dotIdx !== -1 ? fullName.slice(dotIdx + 1) : fullName;
 
-          const fullName = data.fullName || "";
-          const dotIdx = fullName.indexOf(".");
-          const salutation = dotIdx !== -1 ? fullName.slice(0, dotIdx) : "Mr";
-          const name = dotIdx !== -1 ? fullName.slice(dotIdx + 1) : fullName;
-
-          setForm({
-            logoSelectedLinks: data.logoURLs || [],
-            logoCustomFiles: [],
-            salutation,
-            name,
-            mobile: userMobile,
-            designation: data.designation || "",
-            profileImageBlobs: [],
-            profileImageBlobPreviews: [],
-            existingProfileImageURLs: data.profileImageURLs || [],
-            _pendingProfileBlobs: [],
-            topupSelectedLinks: data.topuplineURLs || [],
-            topupCustomFiles: [],
-            socials: data.socials || { Facebook: "", Instagram: "", Youtube: "", X: "" },
-            socialSameId: "",
-            socialSameSelected: [],
-          });
-        } else {
-          setExistingDocId(null);
-          setForm(initialForm(userMobile));
-        }
-      } catch (err) {
-        console.error("Failed to fetch profile:", err);
+        setForm({
+          logoSelectedLinks: data.logoURLs || [],
+          logoCustomFiles: [],
+          salutation,
+          name,
+          mobile: userMobile,
+          designation: data.designation || "",
+          profileImageBlobs: [],
+          profileImageBlobPreviews: [],
+          existingProfileImageURLs: data.profileImageURLs || [],
+          _pendingProfileBlobs: [],
+          topupSelectedLinks: data.topuplineURLs || [],
+          topupCustomFiles: [],
+          socials: data.socials || { Facebook: "", Instagram: "", Youtube: "", X: "" },
+          socialSameId: "",
+          socialSameSelected: [],
+        });
+      } else {
+        setExistingDocId(null);
         setForm(initialForm(userMobile));
-      } finally {
-        setLoadingProfile(false);
       }
-    };
-
-    fetchProfile();
+    } catch (err) {
+      console.error("Failed to fetch profile:", err);
+      setForm(initialForm(userMobile));
+    } finally {
+      setLoadingProfile(false);
+    }
   }, [userMobile]);
+
+  // ── Fetch on mount ─────────────────────────────────────────
+  useEffect(() => {
+    fetchProfile();
+  }, [fetchProfile]);
 
   const setField = (key, val) => setForm((f) => ({ ...f, [key]: val }));
   const clearError = (key) => setErrors((prev) => ({ ...prev, [key]: undefined }));
@@ -537,7 +537,9 @@ export default function MLMProfilePage() {
       }
 
       toast.success(isEditMode ? "Profile updated successfully!" : "Profile saved successfully!");
-      setTimeout(() => window.location.reload(), 1000);
+
+      // ✅ Re-fetch from Firestore and update state — no page reload needed
+      await fetchProfile();
 
     } catch (err) {
       console.error("Save error:", err);
@@ -552,7 +554,6 @@ export default function MLMProfilePage() {
     if (!existingDocId) return;
     setDeleting(true);
     try {
-      // Query by mobile to find the document (safety check)
       const q = query(collection(db, "mlmprofiles"), where("mobile", "==", userMobile));
       const snap = await getDocs(q);
 
@@ -560,13 +561,11 @@ export default function MLMProfilePage() {
         await deleteDoc(doc(db, "mlmprofiles", snap.docs[0].id));
       }
 
-      // Clear local storage
       localStorage.removeItem("mlmProfile");
 
       toast.success("Profile deleted successfully.");
       setShowDeleteModal(false);
 
-      // Navigate to logout
       setTimeout(() => navigate("/logout"), 800);
     } catch (err) {
       console.error("Delete error:", err);
@@ -917,7 +916,6 @@ export default function MLMProfilePage() {
                   </svg>
                 </div>
                 <div className="flex-1">
-                  {/* <p className="text-sm font-semibold text-red-700">Danger Zone</p> */}
                   <p className="text-xs text-red-500 mt-0.5 leading-relaxed">
                     Permanently delete your MLM profile. This cannot be undone and you will be logged out.
                   </p>

@@ -112,10 +112,10 @@ function Myprofile() {
         </div>
 
         {/* Right side */}
-        <div className="flex h-full flex-col gap-6 justify-start items-start">
-          <div className="text-xs  font-bold flex relative bottom-0.5 justify-center items-center text-white w-full h-4  bg-accent p-3 rounded-bl-xl rounded-tr-lg">
+        <div className="flex h-full flex-col gap-6 justify-center items-start">
+          {/* <div className="text-xs  font-bold flex relative bottom-0.5 justify-center items-center text-white w-full h-4  bg-accent p-3 rounded-bl-xl rounded-tr-lg">
             <p>4 Days Left</p>
-          </div>
+          </div> */}
 
           {/* Edit Modal */}
           <Modal>

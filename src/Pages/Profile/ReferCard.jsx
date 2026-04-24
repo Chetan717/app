@@ -39,7 +39,7 @@ export default function ReferCard() {
 
   const handleReferNow = () => {
     const msg = `Join using my referral code: ${referCode}`;
-    if (navigator.share) navigator.share({ title: "Join & earn 1 month free!", text: msg });
+    if (navigator.share) navigator.share({ title: "Join & earn 10 free Credit!", text: msg });
     else alert(msg);
   };
 
@@ -63,7 +63,7 @@ export default function ReferCard() {
         <div className="relative z-10 max-w-[58%]">
           <p className="text-white/85  text-[10px] mb-2">
             Refer & Earn up to{" "}
-            <span className="text-[11px] text-white">1 Month FREE*</span>
+            <span className="text-[11px] text-white">10 Free Credits! </span>
           </p>
 
           {/* Code box */}
