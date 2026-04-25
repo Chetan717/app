@@ -222,7 +222,8 @@ export function Signup() {
         sessionStorage.removeItem("referredByDocId");
       }
 
-      alert("🎉 Account created successfully! Please login.");
+      // alert("🎉 Account created successfully! Please login.");
+
       navigate("/login");
     } catch (error) {
       console.error("Verify Error:", error);

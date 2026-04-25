@@ -18,8 +18,9 @@ function getStoredHeaderData() {
   );
   const mlmProfile = JSON.parse(localStorage.getItem("mlmProfile") || "{}");
   const userMlm = JSON.parse(localStorage.getItem("usermlm") || "{}");
+  const lgurl = mlmProfile.logoURLs || [];
   return {
-    companyLogo: mlmProfile?.logoURLs[0] || "",
+    companyLogo: lgurl[0] || "",
     userName: mlmProfile?.name || userMlm?.name || "",
   };
 }
@@ -108,20 +109,20 @@ export default function Header({
             <Moon className="size-5 text-accent dark:text-white" />
           )}
         </button>
-        
-        {location.pathname === "/Editor" ? (
-          <button
-            onClick={() => navigate("/mlmprofile")}
-            className="flex items-center gap-2 pl-2 pr-2.5 py-1 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors group cursor-pointer"
-          >
-            <Gear className="size-5 text-accent dark:text-white" />
-      
-            {/* <div className="w-7 h-7 rounded-lg bg-[#0e245c] flex items-center justify-center text-white font-bold text-xs flex-shrink-0">
+
+        {
+          location.pathname === "/Editor" ? (
+            <button
+              onClick={() => navigate("/mlmprofile")}
+              className="flex items-center gap-2 pl-2 pr-2.5 py-1 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors group cursor-pointer"
+            >
+              <Gear className="size-5 text-accent dark:text-white" />
+
+              {/* <div className="w-7 h-7 rounded-lg bg-[#0e245c] flex items-center justify-center text-white font-bold text-xs flex-shrink-0">
               {userName?.[0]?.toUpperCase() || "A"}
             </div> */}
-          </button>
-        ) : (
-          null
+            </button>
+          ) : null
           // <button
           //   onClick={() => navigate("/profile")}
           //   className="flex items-center gap-2 pl-2 pr-2.5 py-1 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors group"
@@ -130,7 +131,7 @@ export default function Header({
           //     {userName?.[0]?.toUpperCase() || "A"}
           //   </div>
           // </button>
-        )}
+        }
       </div>
     </header>
   );

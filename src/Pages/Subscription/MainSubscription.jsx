@@ -445,7 +445,7 @@ export default function MainSubscription() {
       if (!company?.id) throw new Error("Company ID not found.");
       const docRef = doc(db, "mlmcomp", company.id);
       const docSnap = await getDoc(docRef);
-      if (!docSnap.exists()) throw new Error("Company not found in Firestore.");
+      if (!docSnap.exists()) throw new Error("Company Doesnot Launch Any Plan Yet!.");
       const data = docSnap.data();
       const fetchedPlans = (data?.Plans ?? []).filter(
         (p) => p.PlanName || p.image_url,
